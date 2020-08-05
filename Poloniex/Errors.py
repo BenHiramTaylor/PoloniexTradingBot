@@ -1,4 +1,4 @@
-class TickerError():
+class TickerError(Exception):
     pass
-class IntervalError():
+class IntervalError(Exception):
     pass
