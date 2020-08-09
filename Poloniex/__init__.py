@@ -1,6 +1,10 @@
 from Poloniex import Errors
 import datetime as dt
+import json
 import requests
+import os
+from fbprophet import Prophet
+import pandas as pd
 
 def check_ticker(Ticker):
     AllTickers = ["USDT_BTC"]
@@ -67,3 +71,25 @@ def load_chart_data(Interval, Ticker, StartUnix, EndUnix):
         return requests.HTTPError(f"Didn't get 200 status code on load_chart_data, Got: {r.status_code}\n{r.text}")
     result = r.json()
     return result
+
+def predict_next_close(Interval, Ticker):
+    IntervalCheck = check_interval(Interval)
+    if IntervalCheck:
+        return IntervalCheck
+    TickerCheck = check_ticker(Ticker)
+    if TickerCheck:
+        return TickerCheck
+    
+    closedates = all_close_data_json(Interval,Ticker,"2018-01-01")
+    tempfile = f'closedates_{Ticker}_{Interval}.json'
+    with open(tempfile, 'w') as f:
+        json.dump(closedates,f)
+    df = pd.read_json(tempfile)
+    os.remove(tempfile)
+    df = df.rename(columns={'date':'ds'})
+    df = df.rename(columns={'close':'y'})
+    model = Prophet()
+    model.fit(df)
+    nextday = model.make_future_dataframe(periods=1)
+    forecast = model.predict(nextday)
+    return forecast.tail(1)
