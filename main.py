@@ -1,5 +1,7 @@
-import Poloniex
+from Poloniex import Poloniex
 
 if __name__ == "__main__":
-    precition = Poloniex.predict_next_close(86400, "USDT_BTC")
-    print(precition)
+    API_Secret = ""
+    API_Key = ""
+    Polo = Poloniex(API_Key,API_Secret)
+    print(Polo.execute_command('returnBalances'))
