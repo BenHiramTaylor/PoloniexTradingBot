@@ -15,9 +15,6 @@ class Poloniex:
         self.API_SECRET = API_SECRET
         self.PRIVATE_URL = "https://poloniex.com/tradingApi"
         self.PUBLIC_URL = "https://poloniex.com/public"
-        self.PUBLIC_COMMANDS = []
-        self.PRIVATE_COMMANDS = []
-        self.INTERVALS = []
         with open("PoloniexSettings.json","r")as f:
             settings = json.load(f)
         self.PUBLIC_COMMANDS = settings["Public_Commands"]
