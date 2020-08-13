@@ -25,24 +25,30 @@ class Poloniex:
         self.INTERVALS = settings["Intervals"]
         self.TICKERS = settings["Tickers"]
 
-    def private_auth(self,command):
+    def private_post(self,command):
         nonce = int(dt.datetime.now().timestamp())
         params = {"command":command,"nonce":nonce}
         signature = hmac.new(str.encode(self.API_SECRET, 'utf-8'),str.encode(f'command={command}&nonce={str(nonce)}', 'utf-8'),hashlib.sha512)
         headers = {"Key":self.API_KEY,"Sign":signature.hexdigest()}
         return headers, params
     
+    def public_post(self,command):
+        while True:
+            r = requests.get(self.PUBLIC_URL,params={"command":command})
+            if r.status_code == 200:
+                break
+            else:
+                print(f"Got Status Code: {r.status_code}, trying again.")
+        return r.json()
+
+    
     def execute_command(self,command):
-        if command in self.PUBLIC_COMMANDS:
-            url = self.PUBLIC_URL
+        if command == "marketTradeHistory":
+            result = self.public_post('returnTradeHistory')
+        elif command in self.PUBLIC_COMMANDS:
+            result = self.public_post(command)
         elif command in self.PRIVATE_COMMANDS:
-            url = self.PRIVATE_URL
+            result = self.private_post(command)
         else:
             return PoloniexError("Command not recognised.")
-
-        headers, params = self.private_auth(command)
-        r = requests.get(url, headers=headers,params=params)
-        if r.status_code != 200:
-            print(f"Did not get 200 on {command}, got: {r.status_code}\n{r.text}")
-        result = r.json()
         return result
