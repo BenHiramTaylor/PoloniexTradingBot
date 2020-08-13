@@ -21,7 +21,6 @@ class Poloniex:
         with open("PoloniexSettings.json","r")as f:
             settings = json.load(f)
         self.PUBLIC_COMMANDS = settings["Public_Commands"]
-        self.PRIVATE_COMMANDS = settings["Private_Commands"]
         self.INTERVALS = settings["Intervals"]
         self.TICKERS = settings["Tickers"]
 
@@ -33,6 +32,10 @@ class Poloniex:
         return headers, params
     
     def public_post(self,command):
+        if command not in self.PUBLIC_COMMANDS:
+            return PoloniexError("Command not recognised.")
+        if command == "marketTradeHistory":
+            command = "returnTradeHistory"
         while True:
             r = requests.get(self.PUBLIC_URL,params={"command":command})
             if r.status_code == 200:
@@ -40,15 +43,3 @@ class Poloniex:
             else:
                 print(f"Got Status Code: {r.status_code}, trying again.")
         return r.json()
-
-    
-    def execute_command(self,command):
-        if command == "marketTradeHistory":
-            result = self.public_post('returnTradeHistory')
-        elif command in self.PUBLIC_COMMANDS:
-            result = self.public_post(command)
-        elif command in self.PRIVATE_COMMANDS:
-            result = self.private_post(command)
-        else:
-            return PoloniexError("Command not recognised.")
-        return result
