@@ -1,13 +1,4 @@
 {
-  "Public_Commands": [
-    "returnTicker",
-    "return24hVolume",
-    "returnOrderBook",
-    "marketTradeHistory",
-    "returnChartData",
-    "returnCurrencies",
-    "returnLoanOrders"
-  ],
   "Tickers": [
     "BTC_BTS",
     "BTC_DASH",
