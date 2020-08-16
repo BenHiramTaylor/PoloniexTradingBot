@@ -52,8 +52,19 @@ class Poloniex:
             "end":str(end),
             "period":interval
             }
-        data = self.public_post(params)
+
+        result = self.public_post(params)
+        data = []
+        for i in result:
+            tempdic = {}
+            for key in i:
+                if key == "date":
+                    dtobj = dt.datetime.fromtimestamp(i[key])
+                    tempdic['ts'] = dt.datetime.strftime(dtobj,"%Y-%m-%d")
+                else:
+                    tempdic[key] = i[key]
+            data.append(tempdic)
+
         df = pd.DataFrame(data)
-        df.rename(columns={"date":"ts"},inplace=True)
         df.set_index("ts",inplace=True)
         return df
