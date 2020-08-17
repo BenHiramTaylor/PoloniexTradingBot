@@ -36,14 +36,16 @@ class Poloniex:
                 print(f"Got Status Code: {r.status_code}, trying again.")
         return r.json()
     
-    def create_df(self,ticker,interval):
+    def create_df(self,ticker,interval,start=None):
         if interval not in self.INTERVALS:
             intvls = '\n'.join(self.INTERVALS)
             raise PoloniexError(f"Invalid Interval.\nPlease use one of the following:\n{intvls}")
         if ticker not in self.TICKERS:
             tickers = '\n'.join(self.TICKERS)
             raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
-        start = dt.datetime(2018,1,1).timestamp()
+        if not start:
+            start = dt.datetime(2018,1,1).timestamp()
+            
         end = (dt.datetime.now()-dt.timedelta(days=1)).timestamp()
         params = {
             "command":"returnChartData",
