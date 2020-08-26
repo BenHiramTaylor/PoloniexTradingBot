@@ -69,3 +69,19 @@ class Poloniex:
         df = pd.DataFrame(data)
         df.set_index("ts",inplace=True)
         return df
+    
+    def get_current_price(self,Ticker):
+        if Ticker not in self.TICKERS:
+            if Ticker.lower() != "all":
+                tickers = '\n'.join(self.TICKERS)
+                raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
+
+        r = requests.get("https://poloniex.com/public?command=returnTicker")
+        if r.status_code != 200:
+            return requests.HTTPError(f"Didn't get 200 status code on get_current_price, Got: {r.status_code}\n{r.text}")
+
+        AllTickers = r.json()
+        if Ticker.lower() == "all":
+            return AllTickers
+        else:
+            return AllTickers[Ticker]
