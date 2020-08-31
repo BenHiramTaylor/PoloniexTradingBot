@@ -70,10 +70,13 @@ class Poloniex:
         df.set_index("ts",inplace=True)
         return df
     
-    def get_current_price(self,Ticker):
+    def get_current_ticker_data(self,Ticker):
         if Ticker not in self.TICKERS:
             if Ticker.lower() != "all":
-                tickers = '\n'.join(self.TICKERS)
+                temptickers = ['All']
+                for i in self.TICKERS:
+                    temptickers.append(i)
+                tickers = '\n'.join(temptickers)
                 raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
 
         r = requests.get("https://poloniex.com/public?command=returnTicker")
@@ -85,3 +88,15 @@ class Poloniex:
             return AllTickers
         else:
             return AllTickers[Ticker]
+    
+    def get_current_price(self,Ticker):
+        data = self.get_current_ticker_data(Ticker)
+        if Ticker.lower() == "all":
+            tempdata = []
+            for i in data:
+                if "last" in data[i]:
+                    tempdata.append({i:data[i]["last"]})
+            return tempdata
+        else:
+            if "last" in data:
+                return data["last"]
