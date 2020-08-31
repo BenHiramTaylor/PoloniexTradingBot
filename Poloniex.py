@@ -4,6 +4,7 @@ import pandas as pd
 import json
 import hmac
 import hashlib
+import urllib.parse
 
 class PoloniexError(Exception):
     """Base Exception for handling Poloniex API Errors"""
@@ -11,50 +12,37 @@ class PoloniexError(Exception):
 
 class Poloniex:
     def __init__(self,API_KEY, API_SECRET):
-        self.API_KEY = API_KEY
-        self.API_SECRET = API_SECRET
-        self.PRIVATE_URL = "https://poloniex.com/tradingApi"
-        self.PUBLIC_URL = "https://poloniex.com/public"
+        self.__config = {
+            "API_KEY": API_KEY,
+            "Secret": API_SECRET
+        }
+        self.__PRIVATE_URL = "https://poloniex.com/tradingApi"
+        self.__PUBLIC_URL = "https://poloniex.com/public"
         with open("PoloniexSettings.json","r")as f:
             settings = json.load(f)
-        self.INTERVALS = settings["Intervals"]
-        self.TICKERS = settings["Tickers"]
-
-    def private_post(self,command):
-        nonce = int(dt.datetime.now().timestamp())
-        params = {"command":command,"nonce":nonce}
-        signature = hmac.new(str.encode(self.API_SECRET, 'utf-8'),str.encode(f'command={command}&nonce={str(nonce)}', 'utf-8'),hashlib.sha512)
-        headers = {"Key":self.API_KEY,"Sign":signature.hexdigest()}
-        return headers, params
-    
-    def public_post(self,params):
-        while True:
-            r = requests.get(self.PUBLIC_URL,params=params)
-            if r.status_code == 200:
-                break
-            else:
-                print(f"Got Status Code: {r.status_code}, trying again.")
-        return r.json()
+        self.__PUBLIC_COMMANDS = settings["Public_Commands"]
+        self.__PRIVATE_COMMANDS = settings["Private_Commands"]
+        self.__INTERVALS = settings["Intervals"]
+        self.__TICKERS = settings["Tickers"]
     
     def create_df(self,ticker,interval,start,end):
-        if interval not in self.INTERVALS:
-            intvls = '\n'.join(self.INTERVALS)
+        if interval not in self.__INTERVALS:
+            intvls = '\n'.join(self.__INTERVALS)
             raise PoloniexError(f"Invalid Interval.\nPlease use one of the following:\n{intvls}")
-        if ticker not in self.TICKERS:
-            tickers = '\n'.join(self.TICKERS)
+        if ticker not in self.__TICKERS:
+            tickers = '\n'.join(self.__TICKERS)
             raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
 
         start = start.timestamp()
         end = end.timestamp()
         params = {
-            "command":"returnChartData",
             "currencyPair":ticker,
             "start":str(start),
             "end":str(end),
             "period":interval
             }
 
-        result = self.public_post(params)
+        result = self.api_query("returnChartData",params)
         data = []
         for i in result:
             tempdic = {}
@@ -70,28 +58,21 @@ class Poloniex:
         df.set_index("ts",inplace=True)
         return df
     
-    def get_current_ticker_data(self,Ticker):
-        if Ticker not in self.TICKERS:
-            if Ticker.lower() != "all":
-                temptickers = ['All']
-                for i in self.TICKERS:
-                    temptickers.append(i)
-                tickers = '\n'.join(temptickers)
-                raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
+    def get_current_ticker_data(self,Ticker="All"):
+        if Ticker not in self.__TICKERS:
+            tickers = '\n'.join(self.__TICKERS)
+            raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}\nDefault is 'All'")
 
-        r = requests.get("https://poloniex.com/public?command=returnTicker")
-        if r.status_code != 200:
-            return requests.HTTPError(f"Didn't get 200 status code on get_current_price, Got: {r.status_code}\n{r.text}")
+        AllTickers = self.api_query()
 
-        AllTickers = r.json()
-        if Ticker.lower() == "all":
+        if Ticker == "All":
             return AllTickers
         else:
             return AllTickers[Ticker]
     
     def get_current_price(self,Ticker):
         data = self.get_current_ticker_data(Ticker)
-        if Ticker.lower() == "all":
+        if Ticker == "All":
             tempdata = []
             for i in data:
                 if "last" in data[i]:
@@ -100,3 +81,38 @@ class Poloniex:
         else:
             if "last" in data:
                 return data["last"]
+
+    def api_query(self, command, params={}):
+
+        default_params = {
+            'nonce': int(dt.datetime.now().timestamp()),
+            'command': command
+        }
+        params.update(default_params)
+
+        # Trading / Private API Requests
+        if command in self.__PRIVATE_COMMANDS:
+            if self.__config is None:
+                print('Specify API-Key and Secret first.')
+                return
+
+            # Sign POST data for authentication
+            params_encoded = urllib.parse.urlencode(params).encode('ascii')
+            sign = hmac.new(self.__config['Secret'].encode('ascii'), params_encoded, hashlib.sha512).hexdigest()
+            headers = {
+                'Key': self.__config['API_KEY'],
+                'Sign': sign
+            }
+            r = requests.post(self.__PRIVATE_URL, data=params, headers=headers)
+            return r
+
+        # Trading / Public API Requests
+        elif command in self.__PUBLIC_COMMANDS:
+            params.pop('nonce')
+            if command == 'returnMarketTradeHistory':
+                params['command'] = 'returnTradeHistory'
+            r = requests.get(self.__PUBLIC_URL, params)
+            return r
+
+        else:
+            print('API command does not exist!')
