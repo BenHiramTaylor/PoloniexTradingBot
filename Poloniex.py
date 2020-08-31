@@ -60,17 +60,18 @@ class Poloniex:
     
     def get_current_ticker_data(self,Ticker="All"):
         if Ticker not in self.__TICKERS:
-            tickers = '\n'.join(self.__TICKERS)
-            raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}\nDefault is 'All'")
+            if Ticker != "All":
+                tickers = '\n'.join(self.__TICKERS)
+                raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}\nDefault is 'All'")
 
-        AllTickers = self.api_query()
+        AllTickers = self.api_query("returnTicker")
 
         if Ticker == "All":
             return AllTickers
         else:
             return AllTickers[Ticker]
     
-    def get_current_price(self,Ticker):
+    def get_current_price(self,Ticker="All"):
         data = self.get_current_ticker_data(Ticker)
         if Ticker == "All":
             tempdata = []
@@ -104,7 +105,7 @@ class Poloniex:
                 'Sign': sign
             }
             r = requests.post(self.__PRIVATE_URL, data=params, headers=headers)
-            return r
+            return r.json()
 
         # Trading / Public API Requests
         elif command in self.__PUBLIC_COMMANDS:
@@ -112,7 +113,7 @@ class Poloniex:
             if command == 'returnMarketTradeHistory':
                 params['command'] = 'returnTradeHistory'
             r = requests.get(self.__PUBLIC_URL, params)
-            return r
+            return r.json()
 
         else:
             print('API command does not exist!')
