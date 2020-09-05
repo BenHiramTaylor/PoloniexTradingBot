@@ -48,8 +48,12 @@ class Poloniex:
             tempdic = {}
             for key in i:
                 if key == "date":
-                    dtobj = dt.datetime.fromtimestamp(i[key])
-                    tempdic['ts'] = dt.datetime.strftime(dtobj,"%Y-%m-%d")
+                    if interval == 86400:
+                        dtobj = dt.datetime.fromtimestamp(i[key])
+                        tempdic['ts'] = dt.datetime.strftime(dtobj,"%Y-%m-%d")
+                    else:
+                        dtobj = dt.datetime.fromtimestamp(i[key])
+                        tempdic['ts'] = dt.datetime.strftime(dtobj,"%Y-%m-%d %H:%M:%S")
                 else:
                     tempdic[key] = i[key]
             data.append(tempdic)
