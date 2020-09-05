@@ -21,6 +21,7 @@ def parse_prediction_results(dic):
         direction = "Higher"
     else:
         direction = "Lower"
+    print(f"Number of times predicted Higher: {len(dic['Higher'])}\nNumber of times predicted Lower: {len(dic['Lower'])}")
 
     for i in dic[direction]:
             num += i
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     Polo = Poloniex(API_Key,API_Secret)
     if not os.path.exists("CSVS"):
         os.mkdir("CSVS")
-    interval = 86400
+    interval = 7200
     ticker = "USDT_BTC"
     amount_of_predictions = 10000 # NEEDS TO BE MULTIPLE OF 100
     prediction_results = {"Higher":[],"Lower":[]}
@@ -51,10 +52,12 @@ if __name__ == "__main__":
     df["prediction"] = df["close"].shift(-1)
     df.dropna(inplace=True)
 
+    current_price = Polo.get_current_price(ticker)
+
     # TRAIN THE DATA TO GET %
     for i in range(amount_of_predictions):
         # MANIPLULATE DATA FOR TRAINING
-        future_forecast_time = 1
+        future_forecast_time = 2
         x = np.array(df.drop(["prediction"], 1))
         y = np.array(df["prediction"])
         x = preprocessing.scale(x)
@@ -65,10 +68,9 @@ if __name__ == "__main__":
         clf = LinearRegression()
         clf.fit(x_train, y_train)
         prediction = (clf.predict(x_prediction))
-        last_close = df.tail(1)['close'].item()
         
-        # LOG PREDICTIONS BASED ON LAST ROW
-        if prediction[0] > last_close:
+        # LOG PREDICTIONS BASED ON CURRENT PRICE
+        if prediction[0] > current_price:
             prediction_results["Higher"].append(1)
             last_predicted_high = prediction[0]
         else:
@@ -76,7 +78,6 @@ if __name__ == "__main__":
             last_predicted_low = prediction[0]
     
     # Calc % chance of lower/higher
-    current_price = Polo.get_current_price(ticker)
     direction, percentage = parse_prediction_results(prediction_results)
     if direction == "Higher":
         predicted_price = last_predicted_high
