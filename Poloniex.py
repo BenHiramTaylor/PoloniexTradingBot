@@ -25,7 +25,7 @@ class Poloniex:
         self.__INTERVALS = settings["Intervals"]
         self.__TICKERS = settings["Tickers"]
     
-    def create_df(self,ticker,interval,start,end):
+    def create_df(self,ticker,interval,start,end=None):
         if interval not in self.__INTERVALS:
             intvls = '\n'.join(self.__INTERVALS)
             raise PoloniexError(f"Invalid Interval.\nPlease use one of the following:\n{intvls}")
@@ -34,6 +34,8 @@ class Poloniex:
             raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
 
         start = start.timestamp()
+        if end is None:
+            end = dt.datetime.now()
         end = end.timestamp()
         params = {
             "currencyPair":ticker,
