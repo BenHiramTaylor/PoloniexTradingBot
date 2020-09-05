@@ -5,6 +5,7 @@ import json
 import hmac
 import hashlib
 import urllib.parse
+import time
 
 class PoloniexError(Exception):
     """Base Exception for handling Poloniex API Errors"""
@@ -106,7 +107,13 @@ class Poloniex:
                 'Key': self.__config['API_KEY'],
                 'Sign': sign
             }
-            r = requests.post(self.__PRIVATE_URL, data=params, headers=headers)
+            while True:
+                r = requests.post(self.__PRIVATE_URL, data=params, headers=headers)
+                if r.status_code != 200:
+                    time.sleep(0.5)
+                else:
+                    break
+
             return r.json()
 
         # Trading / Public API Requests
@@ -114,7 +121,12 @@ class Poloniex:
             params.pop('nonce')
             if command == 'returnMarketTradeHistory':
                 params['command'] = 'returnTradeHistory'
-            r = requests.get(self.__PUBLIC_URL, params)
+            while True:
+                r = requests.get(self.__PUBLIC_URL, params)
+                if r.status_code != 200:
+                    time.sleep(0.5)
+                else:
+                    break
             return r.json()
 
         else:
