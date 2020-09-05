@@ -47,10 +47,11 @@ if __name__ == "__main__":
     df = Polo.create_df(ticker,interval, dt.datetime(2018,1,1))
     df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
     df.to_csv(f"CSVS/{ticker}_{interval}.csv")
+    next_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S") + dt.timedelta(seconds=interval)
     df["prediction"] = df["close"].shift(-1)
     df.dropna(inplace=True)
 
-    # TRAIN THE DATA 100 TIMES TO GET %
+    # TRAIN THE DATA TO GET %
     for i in range(amount_of_predictions):
         # MANIPLULATE DATA FOR TRAINING
         future_forecast_time = 1
@@ -69,10 +70,17 @@ if __name__ == "__main__":
         # LOG PREDICTIONS BASED ON LAST ROW
         if prediction[0] > last_close:
             prediction_results["Higher"].append(1)
+            last_predicted_high = prediction[0]
         else:
             prediction_results['Lower'].append(1)
+            last_predicted_low = prediction[0]
     
     # Calc % chance of lower/higher
+    current_price = Polo.get_current_price(ticker)
     direction, percentage = parse_prediction_results(prediction_results)
-    print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction}.")
+    if direction == "Higher":
+        predicted_price = last_predicted_high
+    else:
+        predicted_price = last_predicted_low
+    print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the current price of: {current_price} at the next interval of: {next_interval}.\nPrice predicted to be around: {predicted_price}")
     
