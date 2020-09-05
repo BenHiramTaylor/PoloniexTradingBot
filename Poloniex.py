@@ -80,11 +80,11 @@ class Poloniex:
             tempdata = []
             for i in data:
                 if "last" in data[i]:
-                    tempdata.append({i:data[i]["last"]})
+                    tempdata.append({i:float(data[i]["last"])})
             return tempdata
         else:
             if "last" in data:
-                return data["last"]
+                return float(data["last"])
 
     def api_query(self, command, params={}):
 
