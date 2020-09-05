@@ -55,9 +55,10 @@ if __name__ == "__main__":
     current_price = Polo.get_current_price(ticker)
 
     # TRAIN THE DATA TO GET %
+    Start_time = dt.datetime.now().timestamp()
     for i in range(amount_of_predictions):
         # MANIPLULATE DATA FOR TRAINING
-        future_forecast_time = 2
+        future_forecast_time = 1
         x = np.array(df.drop(["prediction"], 1))
         y = np.array(df["prediction"])
         x = preprocessing.scale(x)
@@ -76,6 +77,7 @@ if __name__ == "__main__":
         else:
             prediction_results['Lower'].append(1)
             last_predicted_low = prediction[0]
+    print(f"Took: {dt.datetime.strftime(dt.datetime.fromtimestamp(dt.datetime.now().timestamp() - Start_time), '%H:%M:%S')} to predict for ticker: {ticker} doing {amount_of_predictions} iterations.")
     
     # Calc % chance of lower/higher
     direction, percentage = parse_prediction_results(prediction_results)
