@@ -12,7 +12,7 @@ def parse_prediction_results(dic):
         raise Exception(f"amount_of_predictions is not a multiple of 100 it is: {amount_of_predictions}")
     
     scaler = 0
-    num = float(0)
+    average = float(0)
     
     if amount_of_predictions != 100:
         scaler = amount_of_predictions / 100
@@ -24,11 +24,12 @@ def parse_prediction_results(dic):
     print(f"Number of times predicted Higher: {len(dic['Higher'])}\nNumber of times predicted Lower: {len(dic['Lower'])}")
 
     for i in dic[direction]:
-            num += i
+            average = average + i
         
-    percentage = num/scaler
+    percentage = len(dic[direction])/scaler
+    average = average/scaler
 
-    return direction, percentage
+    return direction, percentage, average
 
 if __name__ == "__main__":
     # GENERATE CONFIGS AND DEFAULT SETTINGS 
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     Polo = Poloniex(API_Key,API_Secret)
     if not os.path.exists("CSVS"):
         os.mkdir("CSVS")
-    interval = 7200
+    interval = 86400
     ticker = "USDT_BTC"
     amount_of_predictions = 10000 # NEEDS TO BE MULTIPLE OF 100
     prediction_results = {"Higher":[],"Lower":[]}
@@ -72,18 +73,13 @@ if __name__ == "__main__":
         
         # LOG PREDICTIONS BASED ON CURRENT PRICE
         if prediction[0] > current_price:
-            prediction_results["Higher"].append(1)
-            last_predicted_high = prediction[0]
+            prediction_results["Higher"].append(prediction[0])
         else:
-            prediction_results['Lower'].append(1)
-            last_predicted_low = prediction[0]
+            prediction_results['Lower'].append(prediction[0])
+
     print(f"Took: {dt.datetime.strftime(dt.datetime.fromtimestamp(dt.datetime.now().timestamp() - Start_time), '%H:%M:%S')} to predict for ticker: {ticker} doing {amount_of_predictions} iterations.")
     
     # Calc % chance of lower/higher
-    direction, percentage = parse_prediction_results(prediction_results)
-    if direction == "Higher":
-        predicted_price = last_predicted_high
-    else:
-        predicted_price = last_predicted_low
-    print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the current price of: {current_price} at the next interval of: {next_interval}.\nPrice predicted to be around: {predicted_price}")
+    direction, percentage, average = parse_prediction_results(prediction_results)
+    print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the current price of: {current_price} at the next interval of: {next_interval}.\nAverage price predicted: {average}")
     
