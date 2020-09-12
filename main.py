@@ -38,7 +38,9 @@ if __name__ == "__main__":
         config = json.load(f)
     API_Secret = config["API_Secret"]
     API_Key = config["API_Key"]
-    LastRun = 0
+    with open("LastRun.json","r") as f:
+        lastrunjson = json.load(f)
+        LastRun = lastrunjson["LastRun"]
     Polo = Poloniex(API_Key,API_Secret)
     if not os.path.exists("JSON"):
         os.mkdir("JSON")
@@ -48,13 +50,16 @@ if __name__ == "__main__":
     prediction_results = {"Higher":[],"Lower":[]}
 
     while True:
-        if LastRun >= interval:
-            print(f"It has been {interval} number of seconds since last run. running now..")
-            LastRun = 0
+        time_since_run = dt.datetime.now().timestamp() - LastRun
+        if time_since_run >= interval:
+            print(f"It has been {time_since_run} seconds since last run. running now..")
+            now_ts = dt.datetime.now().timestamp()
+            LastRun = now_ts
+            with open("LastRun.json","w") as f:
+                json.dump({"LastRun":now_ts},f)
         else:
-            print(f"Not been {interval} number of seconds since last run, it has been {LastRun}, sleeping for 5 minutes.")
-            time.sleep(300)
-            LastRun = LastRun + 300
+            print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 1 minute.")
+            time.sleep(60)
             continue
  
         # CREATE DF AND DUMP TO CSV
