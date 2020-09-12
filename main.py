@@ -129,6 +129,7 @@ if __name__ == "__main__":
         direction, percentage, average = parse_prediction_results(prediction_results)
         print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the current price of: {current_price} at the next interval of: {next_interval}.\nAverage price predicted: {average}")
         
+        # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
         json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"close":"","prediction":"","LRPrediction":average,"PredictedDirectionFromCurrent":direction,"CurrentPriceWhenPredicted":current_price}
 
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
