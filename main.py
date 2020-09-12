@@ -38,11 +38,11 @@ if __name__ == "__main__":
         config = json.load(f)
     API_Secret = config["API_Secret"]
     API_Key = config["API_Key"]
+    Polo = Poloniex(API_Key,API_Secret)
     with open("LastRun.json","r") as f:
         lastrunjson = json.load(f)
         LastRun = lastrunjson["LastRun"]
     Last_Data_Refresh = 0
-    Polo = Poloniex(API_Key,API_Secret)
     prediction_results = {"Higher":[],"Lower":[]}
     if not os.path.exists("JSON"):
         os.mkdir("JSON")
