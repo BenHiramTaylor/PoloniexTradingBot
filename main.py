@@ -63,7 +63,10 @@ if __name__ == "__main__":
         else:
             print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 1 minute.")
             time.sleep(60)
-            continue           
+            continue        
+
+        # REFRESH ALL OPEN POSITIONS
+        open_positions = Polo.load_all_open_positions()   
  
         # CREATE DF AND DUMP TO CSV
         df = Polo.create_df(ticker,interval, dt.datetime(2018,1,1))
@@ -166,4 +169,6 @@ if __name__ == "__main__":
 
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
             json.dump(json_file,f,indent=2)
+
+        #TODO ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF I HAVE ANY OPEN TRADES OF THAT TICKER
         
