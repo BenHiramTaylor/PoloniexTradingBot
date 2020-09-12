@@ -50,10 +50,11 @@ if __name__ == "__main__":
     while True:
         if LastRun >= interval:
             print(f"It has been {interval} number of seconds since last run. running now..")
+            LastRun = 0
         else:
-            print(f"Not been {interval} number of seconds since last run, it has been {LastRun}, sleeping for 1 minute.")
-            time.sleep(60)
-            LastRun = LastRun + 60
+            print(f"Not been {interval} number of seconds since last run, it has been {LastRun}, sleeping for 5 minutes.")
+            time.sleep(300)
+            LastRun = LastRun + 300
             continue
  
         # CREATE DF AND DUMP TO CSV
