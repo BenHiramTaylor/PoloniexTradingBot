@@ -33,7 +33,7 @@ def parse_prediction_results(dic):
     return direction, percentage, scaled_average
 
 if __name__ == "__main__":
-    # GENERATE CONFIGS AND DEFAULT SETTINGS 
+    # GENERATE DEFAULT SETTINGS 
     with open('APISettings.json','r') as f:
         config = json.load(f)
     API_Secret = config["API_Secret"]
@@ -41,14 +41,17 @@ if __name__ == "__main__":
     with open("LastRun.json","r") as f:
         lastrunjson = json.load(f)
         LastRun = lastrunjson["LastRun"]
+    Last_Data_Refresh = 0
     Polo = Poloniex(API_Key,API_Secret)
+    prediction_results = {"Higher":[],"Lower":[]}
     if not os.path.exists("JSON"):
         os.mkdir("JSON")
+    
+    # TWEAKABLE CONFIGS HERE
     interval = 7200
     ticker = "USDT_BTC"
     amount_of_predictions = 10000 # NEEDS TO BE MULTIPLE OF 100
-    prediction_results = {"Higher":[],"Lower":[]}
-
+   
     while True:
         time_since_run = dt.datetime.now().timestamp() - LastRun
         if time_since_run >= interval:
@@ -80,15 +83,34 @@ if __name__ == "__main__":
         with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
             json_file = json.load(f)
         
-        # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING
+        # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
         update_count = 0
         ignore_keys = ["LRPrediction","PredictedDirectionFromCurrent","CurrentPriceWhenPredicted"]
-        for date in new_json_data:
-            if date in json_file:
-                for key in new_json_data[date]:
+        for date in json_file:
+            if date in new_json_data:
+                for key in json_file[date]:
                     if key in ignore_keys:
                         continue
-                    if new_json_data[date][key] != json_file[date][key]:
+                    if key == "CorrectPrediction":
+                        if json_file[date]["PredictedDirectionFromCurrent"] == "Lower":
+                            if type(json_file[date]["actual_close"]) is not float:
+                                continue
+                            elif type(json_file[date]["CurrentPriceWhenPredicted"]) is not float:
+                                continue
+                            if json_file[date]["CurrentPriceWhenPredicted"] > json_file[date]["actual_close"]:
+                                json_file[date]["CorrectPrediction"] = True
+                            else:
+                                json_file[date]["CorrectPrediction"] = False
+                        else:
+                            if type(json_file[date]["actual_close"]) is not float:
+                                continue
+                            elif type(json_file[date]["CurrentPriceWhenPredicted"]) is not float:
+                                continue
+                            if json_file[date]["CurrentPriceWhenPredicted"] < json_file[date]["actual_close"]:
+                                json_file[date]["CorrectPrediction"] = True
+                            else:
+                                json_file[date]["CorrectPrediction"] = False
+                    elif new_json_data[date][key] != json_file[date][key]:
                         update_count += 1
                         print(f"Changing {key}: {json_file[date][key]} to {key}: {new_json_data[date][key]} for date {date} in log.")
                         json_file[date][key] = new_json_data[date][key]
@@ -130,7 +152,7 @@ if __name__ == "__main__":
         print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the current price of: {current_price} at the next interval of: {next_interval}.\nAverage price predicted: {average}")
         
         # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
-        json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"close":"","prediction":"","LRPrediction":average,"PredictedDirectionFromCurrent":direction,"CurrentPriceWhenPredicted":current_price}
+        json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"LRPrediction":average,"PredictedDirectionFromCurrent":direction,"CurrentPriceWhenPredicted":current_price,"CorrectPrediction":None}
 
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
             json.dump(json_file,f,indent=2)
