@@ -97,6 +97,14 @@ class Poloniex:
             raise PoloniexError("Your Balance is 0. Please deposit and restart the bot.")
         return val / 100
 
+    def load_all_open_positions(self):
+        data = {}
+        open_positions = self.api_query("returnOpenOrders",{"currencyPair":"all"})
+        for k in open_positions:
+            if len(open_positions[k]):
+                data[k] = open_positions[k]
+        return data
+
     def api_query(self, command, params={}):
 
         default_params = {
