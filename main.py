@@ -66,7 +66,18 @@ if __name__ == "__main__":
             continue        
 
         # REFRESH ALL OPEN POSITIONS
-        open_positions = Polo.load_all_open_positions()   
+        open_positions = Polo.load_all_open_positions()
+
+        # KILL ALL POSITITONS THAT ARE 2 DAYS OLD
+        if len(open_positions):
+            for t in open_positions:
+                for p in open_positions[t]:
+                    two_days_ago = dt.datetime.now() - dt.timedelta(days=2)
+                    trade_date = dt.datetime.strptime(open_positions[t][p]["date"], "%Y-%m-%d %H:%M:%S")
+                    order_number = int(open_positions[t][p]["orderNumber"])
+                    if trade_date < two_days_ago:
+                        print(f"Killing {open_positions[t][p]['type']} order with order number {order_number}\nPosition was opened on: {open_positions[t][p]['date']}")
+                        Polo.api_query("cancelOrder",{"orderNumber":order_number})
  
         # CREATE DF AND DUMP TO CSV
         df = Polo.create_df(ticker,interval, dt.datetime(2018,1,1))
@@ -171,4 +182,10 @@ if __name__ == "__main__":
             json.dump(json_file,f,indent=2)
 
         #TODO ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF I HAVE ANY OPEN TRADES OF THAT TICKER
+        if ticker in open_positions:
+            print(f"Not initiating trade, position already open for ticker {ticker}.")
+        if direction == "Lower":
+            trade_type = "sell"
+        else:
+            trade_type = "buy"
         
