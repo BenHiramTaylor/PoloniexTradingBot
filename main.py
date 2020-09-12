@@ -52,7 +52,7 @@ if __name__ == "__main__":
     ticker = "USDT_BTC"
     amount_of_predictions = 10000 # NEEDS TO BE MULTIPLE OF 100
    
-    while True:
+    while True:    
         time_since_run = dt.datetime.now().timestamp() - LastRun
         if time_since_run >= interval:
             print(f"It has been {time_since_run} seconds since last run. running now..")
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         else:
             print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 1 minute.")
             time.sleep(60)
-            continue
+            continue           
  
         # CREATE DF AND DUMP TO CSV
         df = Polo.create_df(ticker,interval, dt.datetime(2018,1,1))
@@ -82,15 +82,23 @@ if __name__ == "__main__":
 
         with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
             json_file = json.load(f)
-        
+
+        # GENERATE LAST 31 INTERVALS TO SPEED UP JSON EDITING
+        last_31_intervals_keys = list(json_file.keys())
+        last_31_intervals_keys = last_31_intervals_keys[-31:]
+
         # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
         update_count = 0
         ignore_keys = ["LRPrediction","PredictedDirectionFromCurrent","CurrentPriceWhenPredicted"]
         for date in json_file:
+            if date not in last_31_intervals_keys:
+                continue
+
             if date in new_json_data:
                 for key in json_file[date]:
                     if key in ignore_keys:
                         continue
+
                     if key == "CorrectPrediction":
                         if json_file[date]["PredictedDirectionFromCurrent"] == "Lower":
                             if type(json_file[date]["actual_close"]) is not float:
@@ -110,10 +118,12 @@ if __name__ == "__main__":
                                 json_file[date]["CorrectPrediction"] = True
                             else:
                                 json_file[date]["CorrectPrediction"] = False
+
                     elif new_json_data[date][key] != json_file[date][key]:
                         update_count += 1
                         print(f"Changing {key}: {json_file[date][key]} to {key}: {new_json_data[date][key]} for date {date} in log.")
                         json_file[date][key] = new_json_data[date][key]
+
         if update_count > 0:
             print(f"Updated JSON Log with {update_count} new records.")
 
