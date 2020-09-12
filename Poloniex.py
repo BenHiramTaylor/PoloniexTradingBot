@@ -25,6 +25,7 @@ class Poloniex:
         self.__PRIVATE_COMMANDS = settings["Private_Commands"]
         self.__INTERVALS = settings["Intervals"]
         self.__TICKERS = settings["Tickers"]
+        self.__CURRENCIES = settings["Currencies"]
     
     def create_df(self,ticker,interval,start,end=None):
         if interval not in self.__INTERVALS:
@@ -85,6 +86,16 @@ class Poloniex:
         else:
             if "last" in data:
                 return float(data["last"])
+    
+    def get_1_percent_of_bal(self,Currency):
+        if Currency not in self.__CURRENCIES:
+            currencies = '\n'.join(self.__CURRENCIES)
+            raise PoloniexError(f"Invalid Currency.\nPlease use one of the following:\n{currencies}")
+
+        val = float(self.api_query("returnBalances")[Currency])
+        if val == 0:
+            raise PoloniexError("Your Balance is 0. Please deposit and restart the bot.")
+        return val / 100
 
     def api_query(self, command, params={}):
 
