@@ -4,7 +4,7 @@ import json
 import os
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from sklearn import preprocessing, svm
+from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 
 def parse_prediction_results(dic):
@@ -24,12 +24,12 @@ def parse_prediction_results(dic):
     print(f"Number of times predicted Higher: {len(dic['Higher'])}\nNumber of times predicted Lower: {len(dic['Lower'])}")
 
     for i in dic[direction]:
-            average = average + i
+        average = average + i
         
     percentage = len(dic[direction])/scaler
-    average = average/scaler
+    scaled_average = average/len(dic[direction])
 
-    return direction, percentage, average
+    return direction, percentage, scaled_average
 
 if __name__ == "__main__":
     # GENERATE CONFIGS AND DEFAULT SETTINGS 
