@@ -40,6 +40,7 @@ if __name__ == "__main__":
     API_Secret = config["API_Secret"]
     API_Key = config["API_Key"]
     # LOAD TWEAKABLE CONFIGS FROM APISettings.json
+    auto_trade = config["AutoTrade"]
     interval = config["Interval"]
     ticker = config["Ticker"]
     amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
@@ -208,7 +209,12 @@ if __name__ == "__main__":
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
             json.dump(json_file,f,indent=2,sort_keys=True)
 
-        # ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF THERE ARE ANY OPEN TRADES OF THAT TICKER, ONLY TRADES IF % CHANCE IS > 75%
+        # ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF THERE ARE ANY OPEN TRADES OF THAT TICKER 
+        # ONLY TRADES IF % CHANCE IS > 75% AND IF AUTOTRADE IS SET TO TRUE
+        if not auto_trade:
+            print("Not Trading, Auto Trade is set to False, to change this, please set AutoTrade to true in APISettings.json")
+            continue
+
         if percentage >= 75:
             if direction == "Lower":
                 trade_type = "sell"
