@@ -127,8 +127,7 @@ class Poloniex:
         # Trading / Private API Requests
         if command in self.__PRIVATE_COMMANDS:
             if self.__config is None:
-                print('Specify API-Key and Secret first.')
-                return
+                raise PoloniexError('Specify API-Key and Secret first.')
 
             # Sign POST data for authentication
             params_encoded = urllib.parse.urlencode(params).encode('ascii')
