@@ -90,22 +90,22 @@ if __name__ == "__main__":
         with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
             json.dump(LastRunTimes,f)
 
-        # REFRESH ALL OPEN POSITIONS
-        open_positions = Polo.load_all_open_positions()
+        # # REFRESH ALL OPEN POSITIONS
+        # open_positions = Polo.load_all_open_positions()
 
-        # KILL ALL POSITITONS THAT ARE 2 DAYS OLD
-        if len(open_positions):
-            for t in open_positions:
-                for p in open_positions[t]:
-                    two_days_ago = dt.datetime.now() - dt.timedelta(days=2)
-                    trade_date = dt.datetime.strptime(open_positions[t][p]["date"], "%Y-%m-%d %H:%M:%S")
-                    order_number = int(open_positions[t][p]["orderNumber"])
-                    if trade_date < two_days_ago:
-                        print(f"Killing {open_positions[t][p]['type']} order with order number {order_number}\nPosition was opened on: {open_positions[t][p]['date']}")
-                        Polo.api_query("cancelOrder",{"orderNumber":order_number})
+        # # KILL ALL POSITITONS THAT ARE 2 DAYS OLD
+        # if len(open_positions):
+        #     for t in open_positions:
+        #         for p in open_positions[t]:
+        #             two_days_ago = dt.datetime.now() - dt.timedelta(days=2)
+        #             trade_date = dt.datetime.strptime(open_positions[t][p]["date"], "%Y-%m-%d %H:%M:%S")
+        #             order_number = int(open_positions[t][p]["orderNumber"])
+        #             if trade_date < two_days_ago:
+        #                 print(f"Killing {open_positions[t][p]['type']} order with order number {order_number}\nPosition was opened on: {open_positions[t][p]['date']}")
+        #                 Polo.api_query("cancelOrder",{"orderNumber":order_number})
 
-        # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
-        open_positions = Polo.load_all_open_positions()
+        # # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
+        # open_positions = Polo.load_all_open_positions()
  
         # CREATE DF AND DUMP TO CSV
         df = Polo.auto_create_df(ticker,interval)
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
         # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
         update_count = 0
-        ignore_keys = ["LRPrediction","PredictedDirectionFromCurrent","CurrentPriceWhenPredicted"]
+        ignore_keys = ["lr_prediction","predicted_direction_from_current","current_price_when_predicted"]
         
         for date in json_file:
             if date not in last_31_intervals_keys:
@@ -147,25 +147,25 @@ if __name__ == "__main__":
                     if key in ignore_keys:
                         continue
 
-                    if key == "CorrectPrediction":
-                        if json_file[date]["PredictedDirectionFromCurrent"] == "Lower":
+                    if key == "correct_prediction":
+                        if json_file[date]["predicted_direction_from_current"] == "Lower":
                             if type(json_file[date]["actual_close"]) is not float:
                                 continue
-                            elif type(json_file[date]["CurrentPriceWhenPredicted"]) is not float:
+                            elif type(json_file[date]["current_price_when_predicted"]) is not float:
                                 continue
-                            if json_file[date]["CurrentPriceWhenPredicted"] > json_file[date]["actual_close"]:
-                                json_file[date]["CorrectPrediction"] = True
+                            if json_file[date]["current_price_when_predicted"] > json_file[date]["actual_close"]:
+                                json_file[date]["correct_prediction"] = True
                             else:
-                                json_file[date]["CorrectPrediction"] = False
+                                json_file[date]["correct_prediction"] = False
                         else:
                             if type(json_file[date]["actual_close"]) is not float:
                                 continue
-                            elif type(json_file[date]["CurrentPriceWhenPredicted"]) is not float:
+                            elif type(json_file[date]["current_price_when_predicted"]) is not float:
                                 continue
-                            if json_file[date]["CurrentPriceWhenPredicted"] < json_file[date]["actual_close"]:
-                                json_file[date]["CorrectPrediction"] = True
+                            if json_file[date]["current_price_when_predicted"] < json_file[date]["actual_close"]:
+                                json_file[date]["correct_prediction"] = True
                             else:
-                                json_file[date]["CorrectPrediction"] = False
+                                json_file[date]["correct_prediction"] = False
 
                     elif new_json_data[date][key] != json_file[date][key]:
                         json_file[date][key] = new_json_data[date][key]
@@ -211,7 +211,7 @@ if __name__ == "__main__":
         print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the current price of: {current_price} at the next interval of: {next_interval}.\nAverage price predicted: {average}")
         
         # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
-        json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"LRPrediction":average,"PredictedDirectionFromCurrent":direction,"CurrentPriceWhenPredicted":current_price,"CorrectPrediction":None}
+        json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"lr_prediction":average,"predicted_direction_from_current":direction,"current_price_when_predicted":current_price,"correct_prediction":None}
 
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
             json.dump(json_file,f,indent=2,sort_keys=True)
