@@ -100,7 +100,7 @@ if __name__ == "__main__":
         open_positions = Polo.load_all_open_positions()
  
         # CREATE DF AND DUMP TO CSV
-        df = Polo.create_df(ticker,interval, dt.datetime(2018,1,1))
+        df = Polo.auto_create_df(ticker,interval)
         df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
         next_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S") + dt.timedelta(seconds=interval)
         df["shifted_prediction"] = df["close"].shift(-1)
