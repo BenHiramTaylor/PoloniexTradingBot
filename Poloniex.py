@@ -26,6 +26,25 @@ class Poloniex:
         self.__INTERVALS = settings["Intervals"]
         self.__TICKERS = settings["Tickers"]
         self.__CURRENCIES = settings["Currencies"]
+
+    def auto_create_df(self,ticker,interval):
+        if interval not in self.__INTERVALS:
+            intvls = '\n'.join(self.__INTERVALS)
+            raise PoloniexError(f"Invalid Interval.\nPlease use one of the following:\n{intvls}")
+        if ticker not in self.__TICKERS:
+            tickers = '\n'.join(self.__TICKERS)
+            raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
+        if interval == 300:
+            start = dt.datetime.now()-dt.timedelta(weeks=14)
+        elif interval == 900:
+            start = dt.datetime.now()-dt.timedelta(weeks=42)
+        elif interval == 1800:
+            start = dt.datetime.now()-dt.timedelta(weeks=84)
+        else:
+            start = dt.datetime(2018,1,1)
+        
+        df = self.create_df(ticker,interval,start)
+        return df
     
     def create_df(self,ticker,interval,start,end=None):
         if interval not in self.__INTERVALS:
