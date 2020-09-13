@@ -90,22 +90,22 @@ if __name__ == "__main__":
         with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
             json.dump(LastRunTimes,f)
 
-        # # REFRESH ALL OPEN POSITIONS
-        # open_positions = Polo.load_all_open_positions()
+        # REFRESH ALL OPEN POSITIONS
+        open_positions = Polo.load_all_open_positions()
 
-        # # KILL ALL POSITITONS THAT ARE 2 DAYS OLD
-        # if len(open_positions):
-        #     for t in open_positions:
-        #         for p in open_positions[t]:
-        #             two_days_ago = dt.datetime.now() - dt.timedelta(days=2)
-        #             trade_date = dt.datetime.strptime(open_positions[t][p]["date"], "%Y-%m-%d %H:%M:%S")
-        #             order_number = int(open_positions[t][p]["orderNumber"])
-        #             if trade_date < two_days_ago:
-        #                 print(f"Killing {open_positions[t][p]['type']} order with order number {order_number}\nPosition was opened on: {open_positions[t][p]['date']}")
-        #                 Polo.api_query("cancelOrder",{"orderNumber":order_number})
+        # KILL ALL POSITITONS THAT ARE 2 DAYS OLD
+        if len(open_positions):
+            for t in open_positions:
+                for p in open_positions[t]:
+                    two_days_ago = dt.datetime.now() - dt.timedelta(days=2)
+                    trade_date = dt.datetime.strptime(open_positions[t][p]["date"], "%Y-%m-%d %H:%M:%S")
+                    order_number = int(open_positions[t][p]["orderNumber"])
+                    if trade_date < two_days_ago:
+                        print(f"Killing {open_positions[t][p]['type']} order with order number {order_number}\nPosition was opened on: {open_positions[t][p]['date']}")
+                        Polo.api_query("cancelOrder",{"orderNumber":order_number})
 
-        # # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
-        # open_positions = Polo.load_all_open_positions()
+        # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
+        open_positions = Polo.load_all_open_positions()
  
         # CREATE DF AND DUMP TO CSV
         df = Polo.auto_create_df(ticker,interval)
