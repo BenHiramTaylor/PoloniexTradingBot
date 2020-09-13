@@ -101,6 +101,9 @@ class Poloniex:
         if Ticker not in self.__TICKERS:
             tickers = '\n'.join(self.__TICKERS)
             raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
+        if Currency not in self.__CURRENCIES:
+            currencies = '\n'.join(self.__CURRENCIES)
+            raise PoloniexError(f"Invalid Currency.\nPlease use one of the following:\n{currencies}")
         one_percent = self.get_1_percent_of_bal(Currency)
         current_price = self.get_current_price(Ticker)
         return one_percent / current_price
