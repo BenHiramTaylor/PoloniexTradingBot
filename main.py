@@ -1,5 +1,5 @@
 from typing import Container
-from Poloniex import Poloniex
+from Poloniex import Poloniex, PoloniexError
 import datetime as dt
 import json
 import os
@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 
 def parse_prediction_results(dic):
     if amount_of_predictions % 100 != 0:
-        raise Exception(f"amount_of_predictions is not a multiple of 100 it is: {amount_of_predictions}")
+        raise PoloniexError(f"amount_of_predictions is not a multiple of 100 it is: {amount_of_predictions}")
     
     scaler = 0
     average = float(0)
