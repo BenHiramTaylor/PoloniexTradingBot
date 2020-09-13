@@ -212,7 +212,7 @@ if __name__ == "__main__":
         # ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF THERE ARE ANY OPEN TRADES OF THAT TICKER 
         # ONLY TRADES IF % CHANCE IS > 75% AND IF AUTOTRADE IS SET TO TRUE
         if not auto_trade:
-            print("Not Trading, Auto Trade is set to False, to change this, please set AutoTrade to true in APISettings.json")
+            print("Not Trading, AutoTrade is set to False, to change this, please set AutoTrade to true in APISettings.json")
             continue
 
         if percentage >= 75:
