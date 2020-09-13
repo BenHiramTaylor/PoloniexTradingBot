@@ -132,7 +132,8 @@ class Poloniex:
 
     def load_all_open_positions(self):
         data = {}
-        open_positions = self.api_query("returnOpenOrders",{"currencyPair":"all"})
+        params = {"currencyPair":"all"}
+        open_positions = self.api_query("returnOpenOrders",params=params)
         for k in open_positions:
             if len(open_positions[k]):
                 data[k] = open_positions[k]
@@ -161,9 +162,10 @@ class Poloniex:
             while True:
                 r = requests.post(self.__PRIVATE_URL, data=params, headers=headers)
                 if r.status_code != 200:
-                    print("Hit Rate limit. Sleeping for 0.5 Seconds")
+                    print("Hit Rate limit. Sleeping for 1 Second")
                     params["nonce"] = int(dt.datetime.now().timestamp())
-                    time.sleep(0.5)
+                    print(r.content)
+                    time.sleep(1)
                 else:
                     break
 
