@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     Polo = Poloniex(API_Key,API_Secret)
     Last_Data_Refresh = 0
+    next_interval = False
     prediction_results = {"Higher":[],"Lower":[]}
     if not os.path.exists("JSON"):
         os.mkdir("JSON")
@@ -64,17 +65,22 @@ if __name__ == "__main__":
 
     LastRun = LastRunTimes[ticker]
 
-    while True:    
-        time_since_run = dt.datetime.now().timestamp() - LastRun
-        if LastRun == 0:
-            print("Bot never run before, running for first time...")
-        elif time_since_run >= interval:
-            print(f"It has been {time_since_run} seconds since last run. running now..")
+    while True:
+        if not next_interval:
+            time_since_run = dt.datetime.now().timestamp() - LastRun
+            if LastRun == 0:
+                print("Bot never run before, running for first time...")
+            elif time_since_run >= interval:
+                print(f"It has been {time_since_run} seconds since last run. running now..")
+            else:
+                one_tenth = interval/10
+                print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for {one_tenth} seconds.")
+                time.sleep(one_tenth)
+                continue
         else:
-            one_tenth = interval/10
-            print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for {one_tenth} seconds.")
-            time.sleep(one_tenth)
-            continue        
+            next_interval_sleep = next_interval.timestamp()-dt.datetime.now().timestamp()
+            print(f"We have the next interval, sleeping until then. See you in {next_interval_sleep} seconds")
+            time.sleep(next_interval_sleep)
         # LOG DT OF RUN TO FILE
         now_ts = dt.datetime.now().timestamp()
         LastRun = now_ts
