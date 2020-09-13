@@ -95,6 +95,9 @@ if __name__ == "__main__":
                     if trade_date < two_days_ago:
                         print(f"Killing {open_positions[t][p]['type']} order with order number {order_number}\nPosition was opened on: {open_positions[t][p]['date']}")
                         Polo.api_query("cancelOrder",{"orderNumber":order_number})
+
+        # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
+        open_positions = Polo.load_all_open_positions()
  
         # CREATE DF AND DUMP TO CSV
         df = Polo.create_df(ticker,interval, dt.datetime(2018,1,1))
@@ -114,20 +117,19 @@ if __name__ == "__main__":
         with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
             json_file = json.load(f)
 
-        # GENERATE LAST 31 INTERVALS TO SPEED UP JSON EDITING
+        # GET LAST 31 INTERVALS TO SPEED UP JSON EDITING
         last_31_intervals_keys = list(json_file.keys())
         last_31_intervals_keys = last_31_intervals_keys[-31:]
-
-        # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
-        update_count = 0
-        ignore_keys = ["LRPrediction","PredictedDirectionFromCurrent","CurrentPriceWhenPredicted"]
 
         # LOAD ANY MISSING DATA
         for date in new_json_data:
             if date not in json_file:
                 json_file[date] = new_json_data[date]
+
+        # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
+        update_count = 0
+        ignore_keys = ["LRPrediction","PredictedDirectionFromCurrent","CurrentPriceWhenPredicted"]
         
-        # FORMAT ALL THE DATA
         for date in json_file:
             if date not in last_31_intervals_keys:
                 continue
@@ -196,7 +198,7 @@ if __name__ == "__main__":
 
         print(f"Took: {dt.datetime.strftime(dt.datetime.fromtimestamp(dt.datetime.now().timestamp() - Start_time), '%H:%M:%S')} to predict for ticker: {ticker} doing {amount_of_predictions} iterations.")
         
-        # Calc % chance of lower/higher
+        # CALC % CHANCE OF LOWER/HIGHER
         direction, percentage, average = parse_prediction_results(prediction_results)
         print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the current price of: {current_price} at the next interval of: {next_interval}.\nAverage price predicted: {average}")
         
@@ -206,16 +208,19 @@ if __name__ == "__main__":
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
             json.dump(json_file,f,indent=2,sort_keys=True)
 
-        # ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF I HAVE ANY OPEN TRADES OF THAT TICKER
-        if direction == "Lower":
-            trade_type = "sell"
+        # ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF THERE ARE ANY OPEN TRADES OF THAT TICKER, ONLY TRADES IF % CHANCE IS > 75%
+        if percentage >= 75:
+            if direction == "Lower":
+                trade_type = "sell"
+            else:
+                trade_type = "buy"
+            if ticker in open_positions:
+                print(f"Not initiating trade, position already open for ticker {ticker}.")
+            else:
+                trade_amount = Polo.get_1_percent_trade_size(ticker)
+                rate = Polo.get_current_price(ticker)
+                print(f"Placing Trade for ticker: {ticker}, {trade_type}ing an amount of {trade_amount} at a rate of {rate} per 1.")
+                trade_params = {"currencyPair":ticker, "rate":rate, "amount":trade_amount}
+                Polo.api_query(trade_type, trade_params)
         else:
-            trade_type = "buy"
-        if ticker in open_positions:
-            print(f"Not initiating trade, position already open for ticker {ticker}.")
-        else:
-            trade_amount = Polo.get_1_percent_trade_size(ticker)
-            rate = Polo.get_current_price(ticker)
-            print(f"Placing Trade for ticker: {ticker}, {trade_type}ing an amount of {trade_amount} at a rate of {rate} per 1.")
-            trade_params = {"currencyPair":ticker, "rate":rate, "amount":trade_amount}
-            Polo.api_query(trade_type, trade_params)
+            print(f"Not initiating trade, got less than 75% chance on prediction: got {percentage}%")
