@@ -104,6 +104,13 @@ if __name__ == "__main__":
         # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
         update_count = 0
         ignore_keys = ["LRPrediction","PredictedDirectionFromCurrent","CurrentPriceWhenPredicted"]
+
+        # LOAD ANY MISSING DATA
+        for date in new_json_data:
+            if date not in json_file:
+                json_file[date] = new_json_data[date]
+        
+        # FORMAT ALL THE DATA
         for date in json_file:
             if date not in last_31_intervals_keys:
                 continue
@@ -134,9 +141,10 @@ if __name__ == "__main__":
                                 json_file[date]["CorrectPrediction"] = False
 
                     elif new_json_data[date][key] != json_file[date][key]:
-                        update_count += 1
-                        print(f"Changing {key}: {json_file[date][key]} to {key}: {new_json_data[date][key]} for date {date} in log.")
                         json_file[date][key] = new_json_data[date][key]
+                        if json_file[date][key] is not None:
+                            update_count += 1
+                            print(f"Changing {key}: {json_file[date][key]} to {key}: {new_json_data[date][key]} for date {date} in log.")                        
 
         if update_count > 0:
             print(f"Updated JSON Log with {update_count} new records.")
@@ -179,7 +187,7 @@ if __name__ == "__main__":
         json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"LRPrediction":average,"PredictedDirectionFromCurrent":direction,"CurrentPriceWhenPredicted":current_price,"CorrectPrediction":None}
 
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
-            json.dump(json_file,f,indent=2)
+            json.dump(json_file,f,indent=2,sort_keys=True)
 
         #TODO ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF I HAVE ANY OPEN TRADES OF THAT TICKER
         if ticker in open_positions:
