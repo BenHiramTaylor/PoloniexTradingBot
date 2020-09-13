@@ -159,4 +159,4 @@ class Poloniex:
             return r.json()
 
         else:
-            print('API command does not exist!')
+            raise PoloniexError('API command does not exist!')
