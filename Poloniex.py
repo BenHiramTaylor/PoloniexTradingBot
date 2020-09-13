@@ -97,11 +97,11 @@ class Poloniex:
             raise PoloniexError("Your Balance is 0. Please deposit and restart the bot.")
         return val / 100
     
-    def get_1_percent_trade_size(self, Ticker):
+    def get_1_percent_trade_size(self, Ticker, Currency):
         if Ticker not in self.__TICKERS:
             tickers = '\n'.join(self.__TICKERS)
             raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
-        one_percent = self.get_1_percent_of_bal("BTC")
+        one_percent = self.get_1_percent_of_bal(Currency)
         current_price = self.get_current_price(Ticker)
         return one_percent / current_price
 
