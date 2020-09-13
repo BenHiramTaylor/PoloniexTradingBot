@@ -8,6 +8,7 @@
 - You call an invalid API Command.
 - Your Prediction_Iterations is not a multiple of 100.
 - The account balance you are trying to AutoTrade is 0.
+- You kill the script or container manually. **(Be Warned, This will not close open trades.)**
 
 **Any invalid inputs/calls will error while returning a list of valid options.**
 
