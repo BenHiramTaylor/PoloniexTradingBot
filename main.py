@@ -38,16 +38,17 @@ if __name__ == "__main__":
         config = json.load(f)
     API_Secret = config["API_Secret"]
     API_Key = config["API_Key"]
+    # LOAD TWEAKABLE CONFIGS FROM APISettings.json
+    interval = config["Interval"]
+    ticker = config["Ticker"]
+    amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
+
     Polo = Poloniex(API_Key,API_Secret)
     Last_Data_Refresh = 0
     prediction_results = {"Higher":[],"Lower":[]}
     if not os.path.exists("JSON"):
         os.mkdir("JSON")
-    
-    # TWEAKABLE CONFIGS HERE
-    interval = 86400
-    ticker = "USDT_BTC"
-    amount_of_predictions = 10000 # NEEDS TO BE MULTIPLE OF 100
+
 
     # LOAD LAST RUN TIMES, ADD TICKER DEFAULT TO 0
     if not os.path.exists(f"JSON\\LastRunTimes_{interval}.json"):
