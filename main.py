@@ -1,4 +1,3 @@
-from typing import Container
 from Poloniex import Poloniex, PoloniexError
 import datetime as dt
 import json
