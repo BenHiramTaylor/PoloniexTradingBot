@@ -164,7 +164,6 @@ class Poloniex:
                 if r.status_code != 200:
                     print("Hit Rate limit. Sleeping for 1 Second")
                     params["nonce"] = int(dt.datetime.now().timestamp())
-                    print(r.content)
                     time.sleep(1)
                 else:
                     break
