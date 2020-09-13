@@ -1,3 +1,4 @@
+from typing import Container
 from Poloniex import Poloniex
 import datetime as dt
 import json
@@ -205,10 +206,16 @@ if __name__ == "__main__":
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
             json.dump(json_file,f,indent=2,sort_keys=True)
 
-        #TODO ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF I HAVE ANY OPEN TRADES OF THAT TICKER
-        if ticker in open_positions:
-            print(f"Not initiating trade, position already open for ticker {ticker}.")
+        # ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF I HAVE ANY OPEN TRADES OF THAT TICKER
         if direction == "Lower":
             trade_type = "sell"
         else:
             trade_type = "buy"
+        if ticker in open_positions:
+            print(f"Not initiating trade, position already open for ticker {ticker}.")
+        else:
+            trade_amount = Polo.get_1_percent_trade_size(ticker)
+            rate = Polo.get_current_price(ticker)
+            print(f"Placing Trade for ticker: {ticker}, {trade_type}ing an amount of {trade_amount} at a rate of {rate} per 1.")
+            trade_params = {"currencyPair":ticker, "rate":rate, "amount":trade_amount}
+            Polo.api_query(trade_type, trade_params)
