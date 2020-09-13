@@ -159,4 +159,10 @@ class Poloniex:
             return r.json()
 
         else:
-            raise PoloniexError('API command does not exist!')
+            Commands = []
+            for i in self.__PRIVATE_COMMANDS:
+                Commands.append(i)
+            for i in self.__PUBLIC_COMMANDS:
+                Commands.append(i)
+            Commands_List = "\n".join(Commands)
+            raise PoloniexError(f'API command does not exist!\nPlease use one of the following\n{Commands_List}')
