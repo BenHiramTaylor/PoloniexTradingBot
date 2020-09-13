@@ -32,5 +32,5 @@ Once this repository has been cloned, there is some setup required before it can
   
 **This Bot does not support running multiple configs in one script.**
 
-**If you wish to trade mutliple Ticker/Interval combinations, Create a seperate copy of this repository with the desired settings.**
+**If you wish to trade multiple Ticker/Interval combinations, Create a seperate copy of this repository with the desired settings.**
 > Copyright of Ben Hiram Taylor
