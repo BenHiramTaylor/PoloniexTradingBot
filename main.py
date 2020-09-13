@@ -81,6 +81,8 @@ if __name__ == "__main__":
             next_interval_sleep = next_interval.timestamp()-dt.datetime.now().timestamp()
             print(f"We have the next interval, sleeping until then. See you in {next_interval_sleep} seconds")
             time.sleep(next_interval_sleep)
+            next_interval = False
+            continue
         # LOG DT OF RUN TO FILE
         now_ts = dt.datetime.now().timestamp()
         LastRun = now_ts
