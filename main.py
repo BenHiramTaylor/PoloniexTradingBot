@@ -73,22 +73,20 @@ if __name__ == "__main__":
             elif time_since_run >= interval:
                 print(f"It has been {time_since_run} seconds since last run. running now..")
             else:
-                one_tenth = interval/10
-                print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for {one_tenth} seconds.")
-                time.sleep(one_tenth)
+                print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 60 seconds.")
+                time.sleep(60)
                 continue
         else:
+            # LOG TIMESTAMP OF LAST INTERVAL TO FILE
+            last_interval = next_interval - dt.timedelta(seconds=interval)
+            LastRunTimes[ticker] = last_interval.timestamp()
+            with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
+                json.dump(LastRunTimes,f)
+            
             next_interval_sleep = next_interval.timestamp()-dt.datetime.now().timestamp()
             print(f"We have the next interval, sleeping until then. See you in {next_interval_sleep} seconds")
             time.sleep(next_interval_sleep)
-            next_interval = False
             continue
-        # LOG DT OF RUN TO FILE
-        now_ts = dt.datetime.now().timestamp()
-        LastRun = now_ts
-        LastRunTimes[ticker] = LastRun
-        with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
-            json.dump(LastRunTimes,f)
 
         # REFRESH ALL OPEN POSITIONS
         open_positions = Polo.load_all_open_positions()
