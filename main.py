@@ -45,7 +45,7 @@ if __name__ == "__main__":
         os.mkdir("JSON")
     
     # TWEAKABLE CONFIGS HERE
-    interval = 7200
+    interval = 86400
     ticker = "USDT_BTC"
     amount_of_predictions = 10000 # NEEDS TO BE MULTIPLE OF 100
 
@@ -64,17 +64,20 @@ if __name__ == "__main__":
 
     while True:    
         time_since_run = dt.datetime.now().timestamp() - LastRun
-        if time_since_run >= interval:
+        if LastRun == 0:
+            print("Bot never run before, running for first time...")
+        elif time_since_run >= interval:
             print(f"It has been {time_since_run} seconds since last run. running now..")
-            now_ts = dt.datetime.now().timestamp()
-            LastRun = now_ts
-            LastRunTimes[ticker] = LastRun
-            with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
-                json.dump(LastRunTimes,f)
         else:
             print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 1 minute.")
             time.sleep(60)
             continue        
+        # LOG DT OF RUN TO FILE
+        now_ts = dt.datetime.now().timestamp()
+        LastRun = now_ts
+        LastRunTimes[ticker] = LastRun
+        with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
+            json.dump(LastRunTimes,f)
 
         # REFRESH ALL OPEN POSITIONS
         open_positions = Polo.load_all_open_positions()
