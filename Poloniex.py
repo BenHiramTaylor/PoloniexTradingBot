@@ -47,6 +47,9 @@ class Poloniex:
             }
 
         result = self.api_query("returnChartData",params)
+        if "error" in result:
+            raise PoloniexError(result)
+        
         data = []
         for i in result:
             tempdic = {}
