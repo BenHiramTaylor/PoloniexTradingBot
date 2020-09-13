@@ -39,9 +39,6 @@ if __name__ == "__main__":
     API_Secret = config["API_Secret"]
     API_Key = config["API_Key"]
     Polo = Poloniex(API_Key,API_Secret)
-    with open("LastRun.json","r") as f:
-        lastrunjson = json.load(f)
-        LastRun = lastrunjson["LastRun"]
     Last_Data_Refresh = 0
     prediction_results = {"Higher":[],"Lower":[]}
     if not os.path.exists("JSON"):
@@ -51,6 +48,14 @@ if __name__ == "__main__":
     interval = 7200
     ticker = "USDT_BTC"
     amount_of_predictions = 10000 # NEEDS TO BE MULTIPLE OF 100
+
+    if not os.path.exists(f"JSON\\{ticker}_LastRun.json"):
+        with open(f"JSON\\{ticker}_LastRun.json","w") as f:
+            json.dump({"LastRun":0},f)
+
+    with open(f"JSON\\{ticker}_LastRun.json","r") as f:
+        lastrunjson = json.load(f)
+        LastRun = lastrunjson["LastRun"]
    
     while True:    
         time_since_run = dt.datetime.now().timestamp() - LastRun
@@ -58,7 +63,7 @@ if __name__ == "__main__":
             print(f"It has been {time_since_run} seconds since last run. running now..")
             now_ts = dt.datetime.now().timestamp()
             LastRun = now_ts
-            with open("LastRun.json","w") as f:
+            with open(f"JSON\\{ticker}_LastRun.json","w") as f:
                 json.dump({"LastRun":now_ts},f)
         else:
             print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 1 minute.")
