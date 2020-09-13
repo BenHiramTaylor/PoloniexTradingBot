@@ -49,22 +49,28 @@ if __name__ == "__main__":
     ticker = "USDT_BTC"
     amount_of_predictions = 10000 # NEEDS TO BE MULTIPLE OF 100
 
-    if not os.path.exists(f"JSON\\{ticker}_LastRun.json"):
-        with open(f"JSON\\{ticker}_LastRun.json","w") as f:
-            json.dump({"LastRun":0},f)
+    # LOAD LAST RUN TIMES, ADD TICKER DEFAULT TO 0
+    if not os.path.exists(f"JSON\\LastRunTimes_{interval}.json"):
+        with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
+            json.dump({},f)
 
-    with open(f"JSON\\{ticker}_LastRun.json","r") as f:
-        lastrunjson = json.load(f)
-        LastRun = lastrunjson["LastRun"]
-   
+    with open(f"JSON\\LastRunTimes_{interval}.json","r") as f:
+        LastRunTimes = json.load(f)
+
+    if ticker not in LastRunTimes:
+        LastRunTimes[ticker] = 0
+
+    LastRun = LastRunTimes[ticker]
+
     while True:    
         time_since_run = dt.datetime.now().timestamp() - LastRun
         if time_since_run >= interval:
             print(f"It has been {time_since_run} seconds since last run. running now..")
             now_ts = dt.datetime.now().timestamp()
             LastRun = now_ts
-            with open(f"JSON\\{ticker}_LastRun.json","w") as f:
-                json.dump({"LastRun":now_ts},f)
+            LastRunTimes[ticker] = LastRun
+            with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
+                json.dump(LastRunTimes,f)
         else:
             print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 1 minute.")
             time.sleep(60)
