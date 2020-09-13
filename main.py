@@ -38,32 +38,48 @@ if __name__ == "__main__":
         config = json.load(f)
     API_Secret = config["API_Secret"]
     API_Key = config["API_Key"]
+    # LOAD TWEAKABLE CONFIGS FROM APISettings.json
+    interval = config["Interval"]
+    ticker = config["Ticker"]
+    amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
+
     Polo = Poloniex(API_Key,API_Secret)
-    with open("LastRun.json","r") as f:
-        lastrunjson = json.load(f)
-        LastRun = lastrunjson["LastRun"]
     Last_Data_Refresh = 0
     prediction_results = {"Higher":[],"Lower":[]}
     if not os.path.exists("JSON"):
         os.mkdir("JSON")
-    
-    # TWEAKABLE CONFIGS HERE
-    interval = 7200
-    ticker = "USDT_BTC"
-    amount_of_predictions = 10000 # NEEDS TO BE MULTIPLE OF 100
-   
+
+
+    # LOAD LAST RUN TIMES, ADD TICKER DEFAULT TO 0
+    if not os.path.exists(f"JSON\\LastRunTimes_{interval}.json"):
+        with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
+            json.dump({},f)
+
+    with open(f"JSON\\LastRunTimes_{interval}.json","r") as f:
+        LastRunTimes = json.load(f)
+
+    if ticker not in LastRunTimes:
+        LastRunTimes[ticker] = 0
+
+    LastRun = LastRunTimes[ticker]
+
     while True:    
         time_since_run = dt.datetime.now().timestamp() - LastRun
-        if time_since_run >= interval:
+        if LastRun == 0:
+            print("Bot never run before, running for first time...")
+        elif time_since_run >= interval:
             print(f"It has been {time_since_run} seconds since last run. running now..")
-            now_ts = dt.datetime.now().timestamp()
-            LastRun = now_ts
-            with open("LastRun.json","w") as f:
-                json.dump({"LastRun":now_ts},f)
         else:
-            print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 1 minute.")
-            time.sleep(60)
+            one_tenth = interval/100
+            print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for {one_tenth} seconds.")
+            time.sleep(one_tenth)
             continue        
+        # LOG DT OF RUN TO FILE
+        now_ts = dt.datetime.now().timestamp()
+        LastRun = now_ts
+        LastRunTimes[ticker] = LastRun
+        with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
+            json.dump(LastRunTimes,f)
 
         # REFRESH ALL OPEN POSITIONS
         open_positions = Polo.load_all_open_positions()
@@ -104,6 +120,13 @@ if __name__ == "__main__":
         # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
         update_count = 0
         ignore_keys = ["LRPrediction","PredictedDirectionFromCurrent","CurrentPriceWhenPredicted"]
+
+        # LOAD ANY MISSING DATA
+        for date in new_json_data:
+            if date not in json_file:
+                json_file[date] = new_json_data[date]
+        
+        # FORMAT ALL THE DATA
         for date in json_file:
             if date not in last_31_intervals_keys:
                 continue
@@ -134,9 +157,10 @@ if __name__ == "__main__":
                                 json_file[date]["CorrectPrediction"] = False
 
                     elif new_json_data[date][key] != json_file[date][key]:
-                        update_count += 1
-                        print(f"Changing {key}: {json_file[date][key]} to {key}: {new_json_data[date][key]} for date {date} in log.")
                         json_file[date][key] = new_json_data[date][key]
+                        if json_file[date][key] is not None:
+                            update_count += 1
+                            print(f"Changing {key}: {json_file[date][key]} to {key}: {new_json_data[date][key]} for date {date} in log.")                        
 
         if update_count > 0:
             print(f"Updated JSON Log with {update_count} new records.")
@@ -179,7 +203,7 @@ if __name__ == "__main__":
         json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"LRPrediction":average,"PredictedDirectionFromCurrent":direction,"CurrentPriceWhenPredicted":current_price,"CorrectPrediction":None}
 
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
-            json.dump(json_file,f,indent=2)
+            json.dump(json_file,f,indent=2,sort_keys=True)
 
         #TODO ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF I HAVE ANY OPEN TRADES OF THAT TICKER
         if ticker in open_positions:
