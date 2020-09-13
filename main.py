@@ -69,8 +69,9 @@ if __name__ == "__main__":
         elif time_since_run >= interval:
             print(f"It has been {time_since_run} seconds since last run. running now..")
         else:
-            print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 1 minute.")
-            time.sleep(60)
+            one_tenth = interval/100
+            print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for {one_tenth} seconds.")
+            time.sleep(one_tenth)
             continue        
         # LOG DT OF RUN TO FILE
         now_ts = dt.datetime.now().timestamp()
