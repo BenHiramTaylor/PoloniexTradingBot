@@ -77,12 +77,6 @@ if __name__ == "__main__":
                 time.sleep(60)
                 continue
         else:
-            # LOG TIMESTAMP OF LAST INTERVAL TO FILE
-            last_interval = next_interval - dt.timedelta(seconds=interval)
-            LastRunTimes[ticker] = last_interval.timestamp()
-            with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
-                json.dump(LastRunTimes,f)
-            
             next_interval_sleep = next_interval.timestamp()-dt.datetime.now().timestamp()
             print(f"We have the next interval, sleeping until then. See you in {next_interval_sleep} seconds")
             time.sleep(next_interval_sleep)
@@ -108,9 +102,15 @@ if __name__ == "__main__":
         # CREATE DF AND DUMP TO CSV
         df = Polo.auto_create_df(ticker,interval)
         df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
-        next_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S") + dt.timedelta(seconds=interval)
+        last_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
+        next_interval =  last_interval + dt.timedelta(seconds=interval)
         df["shifted_prediction"] = df["close"].shift(-1)
         df.rename(columns={"close":"actual_close"},inplace=True)
+
+        # LOG TIMESTAMP OF LAST INTERVAL TO FILE
+        LastRunTimes[ticker] = last_interval.timestamp()
+        with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
+            json.dump(LastRunTimes,f)
 
         # GENERATE JSON LOG IF NOT PRESENT OR LOAD EXISTING
         json_string = df.to_json(orient="index")
