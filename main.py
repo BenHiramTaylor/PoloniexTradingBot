@@ -85,6 +85,7 @@ if __name__ == "__main__":
 
         # REFRESH ALL OPEN POSITIONS
         open_positions = Polo.load_all_open_positions()
+        killed_positions = False
 
         # KILL ALL POSITITONS THAT ARE 2 DAYS OLD
         if len(open_positions):
@@ -96,9 +97,11 @@ if __name__ == "__main__":
                     if trade_date < two_days_ago:
                         print(f"Killing {open_positions[t][p]['type']} order with order number {order_number}\nPosition was opened on: {open_positions[t][p]['date']}")
                         Polo.api_query("cancelOrder",{"orderNumber":order_number})
-
-            # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
-            open_positions = Polo.load_all_open_positions()
+                        killed_positions = True
+                        
+            if killed_positions:
+                # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
+                open_positions = Polo.load_all_open_positions()
  
         # CREATE DF AND DUMP TO CSV
         df = Polo.auto_create_df(ticker,interval)
