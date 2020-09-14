@@ -64,6 +64,7 @@ if __name__ == "__main__":
         os.mkdir("JSON")
 
     while True:
+        # REFRESH CONFIGS EACH RUN
         refresh_configs()
 
         # LOAD LAST RUN TIMES, ADD TICKER DEFAULT TO 0
