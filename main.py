@@ -63,20 +63,24 @@ if __name__ == "__main__":
     if not os.path.exists("JSON"):
         os.mkdir("JSON")
 
-    # LOAD LAST RUN TIMES, ADD TICKER DEFAULT TO 0
-    if not os.path.exists(f"JSON\\LastRunTimes_{interval}.json"):
-        with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
-            json.dump({},f)
-
-    with open(f"JSON\\LastRunTimes_{interval}.json","r") as f:
-        LastRunTimes = json.load(f)
-
-    if ticker not in LastRunTimes:
-        LastRunTimes[ticker] = 0
-
-    LastRun = LastRunTimes[ticker]
+    
 
     while True:
+        refresh_configs()
+
+        # LOAD LAST RUN TIMES, ADD TICKER DEFAULT TO 0
+        if not os.path.exists(f"JSON\\LastRunTimes_{interval}.json"):
+            with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
+                json.dump({},f)
+
+        with open(f"JSON\\LastRunTimes_{interval}.json","r") as f:
+            LastRunTimes = json.load(f)
+
+        if ticker not in LastRunTimes:
+            LastRunTimes[ticker] = 0
+
+        LastRun = LastRunTimes[ticker]
+
         if not next_interval:
             time_since_run = dt.datetime.now().timestamp() - LastRun
             if LastRun == 0:
