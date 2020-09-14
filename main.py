@@ -8,6 +8,19 @@ from sklearn.linear_model import LinearRegression
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 
+def refresh_configs():
+    global API_Secret, API_Key, auto_trade, interval, ticker, amount_of_predictions
+
+    with open('APISettings.json','r') as f:
+        config = json.load(f)
+    API_Secret = config["API_Secret"]
+    API_Key = config["API_Key"]
+    # LOAD TWEAKABLE CONFIGS FROM APISettings.json
+    auto_trade = config["AutoTrade"]
+    interval = config["Interval"]
+    ticker = config["Ticker"]
+    amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
+
 def parse_prediction_results(dic):
     if amount_of_predictions % 100 != 0:
         raise PoloniexError(f"amount_of_predictions is not a multiple of 100 it is: {amount_of_predictions}")
@@ -33,24 +46,22 @@ def parse_prediction_results(dic):
     return direction, percentage, scaled_average
 
 if __name__ == "__main__":
-    # GENERATE DEFAULT SETTINGS 
-    with open('APISettings.json','r') as f:
-        config = json.load(f)
-    API_Secret = config["API_Secret"]
-    API_Key = config["API_Key"]
-    # LOAD TWEAKABLE CONFIGS FROM APISettings.json
-    auto_trade = config["AutoTrade"]
-    interval = config["Interval"]
-    ticker = config["Ticker"]
-    amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
+    # GENERATE DEFAULT SETTINGS
+    API_Secret = False
+    API_Key = False
+    auto_trade = False
+    interval = False
+    ticker = False
+    amount_of_predictions = False
 
+    # LOAD CONFIGS FROM JSON FILE
+    refresh_configs()
+
+    # CREATE CLASS AND REQUIRED VARS
     Polo = Poloniex(API_Key,API_Secret)
-    Last_Data_Refresh = 0
     next_interval = False
-    prediction_results = {"Higher":[],"Lower":[]}
     if not os.path.exists("JSON"):
         os.mkdir("JSON")
-
 
     # LOAD LAST RUN TIMES, ADD TICKER DEFAULT TO 0
     if not os.path.exists(f"JSON\\LastRunTimes_{interval}.json"):
@@ -82,7 +93,10 @@ if __name__ == "__main__":
             if next_interval_sleep > 0:
                 next_interval_string = dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")
                 print(f"We have the next interval, sleeping until then. See you in {next_interval_sleep} seconds at {next_interval_string}")
-                time.sleep(next_interval_sleep)            
+                time.sleep(next_interval_sleep)
+
+        #RESET DIC FOR PREDICTIONS
+        prediction_results = {"Higher":[],"Lower":[]}    
 
         # REFRESH ALL OPEN POSITIONS
         open_positions = Polo.load_all_open_positions()
