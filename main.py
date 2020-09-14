@@ -47,23 +47,21 @@ def parse_prediction_results(dic):
 
 if __name__ == "__main__":
     # GENERATE DEFAULT SETTINGS
-    API_Secret = False
-    API_Key = False
-    auto_trade = False
-    interval = False
-    ticker = False
-    amount_of_predictions = False
-
-    # LOAD CONFIGS FROM JSON FILE
-    refresh_configs()
+    with open('APISettings.json','r') as f:
+        config = json.load(f)
+    API_Secret = config["API_Secret"]
+    API_Key = config["API_Key"]
+    # LOAD TWEAKABLE CONFIGS FROM APISettings.json
+    auto_trade = config["AutoTrade"]
+    interval = config["Interval"]
+    ticker = config["Ticker"]
+    amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
 
     # CREATE CLASS AND REQUIRED VARS
     Polo = Poloniex(API_Key,API_Secret)
     next_interval = False
     if not os.path.exists("JSON"):
         os.mkdir("JSON")
-
-    
 
     while True:
         refresh_configs()
