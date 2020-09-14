@@ -9,7 +9,7 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 
 def refresh_configs():
-    global API_Secret, API_Key, auto_trade, interval, ticker, amount_of_predictions
+    global API_Secret, API_Key, auto_trade, interval, ticker, amount_of_predictions, amount_of_training_iterations
 
     with open('APISettings.json','r') as f:
         config = json.load(f)
@@ -20,6 +20,7 @@ def refresh_configs():
     interval = config["Interval"]
     ticker = config["Ticker"]
     amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
+    amount_of_training_iterations = config["Training_Iterations"]
 
 def parse_prediction_results(dic):
     if amount_of_predictions % 100 != 0:
@@ -55,7 +56,8 @@ if __name__ == "__main__":
     auto_trade = config["AutoTrade"]
     interval = config["Interval"]
     ticker = config["Ticker"]
-    amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
+    amount_of_predictions = config["Prediction_Iterations"]
+    amount_of_training_iterations = config["Training_Iterations"]
 
     # CREATE CLASS AND REQUIRED VARS
     Polo = Poloniex(API_Key,API_Secret)
@@ -202,18 +204,23 @@ if __name__ == "__main__":
 
         # TRAIN THE DATA TO GET %
         Start_time = dt.datetime.now().timestamp()
-        for i in range(amount_of_predictions):
-            # MANIPLULATE DATA FOR TRAINING
-            future_forecast_time = 1
-            x = np.array(df.drop(["shifted_prediction"], 1))
-            y = np.array(df["shifted_prediction"])
-            x = preprocessing.scale(x)
-            x_prediction = x[-future_forecast_time:]
-            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.5)
+        # CREATE THE MODEL
+        clf = LinearRegression()
 
-            # REGRESS THE TRAINING DATA
-            clf = LinearRegression()
+        # MANIPLULATE DATA FOR TRAINING
+        future_forecast_time = 1
+        x = np.array(df.drop(["shifted_prediction"], 1))
+        y = np.array(df["shifted_prediction"])
+        x = preprocessing.scale(x)
+        x_prediction = x[-future_forecast_time:]
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.5)
+
+        for i in range(amount_of_training_iterations):
+            # TRAIN THE MODEL
             clf.fit(x_train, y_train)
+        
+        for i in range(amount_of_predictions):
+            # RUN PREDICTIONS
             prediction = (clf.predict(x_prediction))
             
             # LOG PREDICTIONS BASED ON CURRENT PRICE
