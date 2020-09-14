@@ -124,15 +124,17 @@ if __name__ == "__main__":
         # CREATE DF AND DUMP TO CSV
         df = Polo.auto_create_df(ticker,interval)
         df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
-        last_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
-        next_interval =  last_interval + dt.timedelta(seconds=interval)
+        current_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
+        next_interval =  current_interval + dt.timedelta(seconds=interval)
         # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
         previous_close = df.tail(2).head(1)['close'].item()
         df["shifted_prediction"] = df["close"].shift(-1)
         df.rename(columns={"close":"actual_close"},inplace=True)
+        # DROP NA RECORDS 
+        df.dropna(inplace=True)
 
         # LOG TIMESTAMP OF LAST INTERVAL TO FILE
-        LastRunTimes[ticker] = last_interval.timestamp()
+        LastRunTimes[ticker] = current_interval.timestamp()
         with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
             json.dump(LastRunTimes,f)
 
@@ -197,9 +199,6 @@ if __name__ == "__main__":
 
         if update_count > 0:
             print(f"Updated JSON Log with {update_count} new records.")
-
-        # DROP NA RECORDS AFRER UPDATING JSON WITH CLOSE
-        df.dropna(inplace=True)
 
         # TRAIN THE DATA TO GET %
         Start_time = dt.datetime.now().timestamp()
