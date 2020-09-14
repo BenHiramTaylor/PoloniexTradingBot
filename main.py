@@ -91,13 +91,12 @@ if __name__ == "__main__":
                 time.sleep(60)
                 continue
         else:
-            next_interval = next_interval + dt.timedelta(seconds=10)
+            next_interval = next_interval + dt.timedelta(seconds=60)
             next_interval_sleep = next_interval.timestamp()-dt.datetime.now().timestamp()
             if next_interval_sleep > 0:
                 next_interval_string = dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")
                 print(f"We have the next interval, sleeping until then. See you in {next_interval_sleep} seconds at {next_interval_string}")
                 time.sleep(next_interval_sleep)
-            next_interval = False
 
         #RESET DIC FOR PREDICTIONS
         prediction_results = {"Higher":[],"Lower":[]}    
@@ -150,6 +149,7 @@ if __name__ == "__main__":
         with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
             json_file = json.load(f)
 
+
         # GET LAST 31 INTERVALS TO SPEED UP JSON EDITING
         last_31_intervals_keys = list(json_file.keys())
         last_31_intervals_keys = last_31_intervals_keys[-31:]
@@ -190,7 +190,7 @@ if __name__ == "__main__":
                                 json_file[date]["correct_prediction"] = False
                     elif key in ignore_keys:
                         continue
-                    
+
                     elif new_json_data[date][key] != json_file[date][key]:
                         json_file[date][key] = new_json_data[date][key]
                         if json_file[date][key] is not None:
