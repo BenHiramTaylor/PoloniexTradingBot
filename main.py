@@ -126,6 +126,8 @@ if __name__ == "__main__":
         df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
         last_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
         next_interval =  last_interval + dt.timedelta(seconds=interval)
+        # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
+        previous_close = df.tail(2).head(1)['close'].item()
         df["shifted_prediction"] = df["close"].shift(-1)
         df.rename(columns={"close":"actual_close"},inplace=True)
 
@@ -156,7 +158,7 @@ if __name__ == "__main__":
 
         # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
         update_count = 0
-        ignore_keys = ["lr_prediction","predicted_direction_from_current","current_price_when_predicted"]
+        ignore_keys = ["lr_prediction","predicted_direction_from_current","previous_close"]
         
         for date in json_file:
             if date not in last_31_intervals_keys:
@@ -168,21 +170,21 @@ if __name__ == "__main__":
                         continue
 
                     if key == "correct_prediction":
-                        if json_file[date]["predicted_direction_from_current"] == "Lower":
+                        if json_file[date]["previous_close"] == "Lower":
                             if type(json_file[date]["actual_close"]) is not float:
                                 continue
-                            elif type(json_file[date]["current_price_when_predicted"]) is not float:
+                            elif type(json_file[date]["previous_close"]) is not float:
                                 continue
-                            if json_file[date]["current_price_when_predicted"] > json_file[date]["actual_close"]:
+                            if json_file[date]["previous_close"] > json_file[date]["actual_close"]:
                                 json_file[date]["correct_prediction"] = True
                             else:
                                 json_file[date]["correct_prediction"] = False
                         else:
                             if type(json_file[date]["actual_close"]) is not float:
                                 continue
-                            elif type(json_file[date]["current_price_when_predicted"]) is not float:
+                            elif type(json_file[date]["previous_close"]) is not float:
                                 continue
-                            if json_file[date]["current_price_when_predicted"] < json_file[date]["actual_close"]:
+                            if json_file[date]["previous_close"] < json_file[date]["actual_close"]:
                                 json_file[date]["correct_prediction"] = True
                             else:
                                 json_file[date]["correct_prediction"] = False
@@ -198,9 +200,6 @@ if __name__ == "__main__":
 
         # DROP NA RECORDS AFRER UPDATING JSON WITH CLOSE
         df.dropna(inplace=True)
-
-        # GET CURRENT PRICE FOR HIGHER/LOWER CHECKS
-        current_price = Polo.get_current_price(ticker)
 
         # TRAIN THE DATA TO GET %
         Start_time = dt.datetime.now().timestamp()
@@ -219,7 +218,7 @@ if __name__ == "__main__":
             prediction = (clf.predict(x_prediction))
             
             # LOG PREDICTIONS BASED ON CURRENT PRICE
-            if prediction[0] > current_price:
+            if prediction[0] > previous_close:
                 prediction_results["Higher"].append(prediction[0])
             else:
                 prediction_results['Lower'].append(prediction[0])
@@ -228,10 +227,10 @@ if __name__ == "__main__":
         
         # CALC % CHANCE OF LOWER/HIGHER
         direction, percentage, average = parse_prediction_results(prediction_results)
-        print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the current price of: {current_price} at the next interval of: {next_interval}.\nAverage price predicted: {average}")
+        print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the previous close of: {previous_close} at the next interval of: {next_interval}.\nAverage price predicted: {average}")
         
         # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
-        json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"lr_prediction":average,"predicted_direction_from_current":direction,"current_price_when_predicted":current_price,"correct_prediction":None}
+        json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"lr_prediction":average,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None}
 
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
             json.dump(json_file,f,indent=2,sort_keys=True)
