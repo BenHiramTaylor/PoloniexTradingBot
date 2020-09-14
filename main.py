@@ -229,7 +229,7 @@ if __name__ == "__main__":
         print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the previous close of: {previous_close} at the next interval of: {next_interval}.\nAverage price predicted: {average}")
         
         # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
-        json_file[dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"lr_prediction":average,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None}
+        json_file[dt.datetime.strftime(current_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"lr_prediction":average,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None}
 
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
             json.dump(json_file,f,indent=2,sort_keys=True)
