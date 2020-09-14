@@ -208,7 +208,7 @@ if __name__ == "__main__":
         clf = LinearRegression()
 
         # MANIPLULATE DATA FOR TRAINING
-        future_forecast_time = 1
+        future_forecast_time = 10
         x = np.array(df.drop(["shifted_prediction"], 1))
         y = np.array(df["shifted_prediction"])
         x = preprocessing.scale(x)
