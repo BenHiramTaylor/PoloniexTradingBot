@@ -124,12 +124,12 @@ if __name__ == "__main__":
         # CREATE DF AND DUMP TO CSV
         df = Polo.auto_create_df(ticker,interval)
         df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
-        current_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
-        next_interval =  current_interval + dt.timedelta(seconds=interval)
         # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
         previous_close = df.tail(2).head(1)['close'].item()
         df["shifted_prediction"] = df["close"].shift(-1)
         df.rename(columns={"close":"actual_close"},inplace=True)
+        current_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
+        next_interval =  current_interval + dt.timedelta(seconds=interval)
         # DROP NA RECORDS 
         df.dropna(inplace=True)
 
