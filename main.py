@@ -97,6 +97,7 @@ if __name__ == "__main__":
                 next_interval_string = dt.datetime.strftime(next_interval,"%Y-%m-%d %H:%M:%S")
                 print(f"We have the next interval, sleeping until then. See you in {next_interval_sleep} seconds at {next_interval_string}")
                 time.sleep(next_interval_sleep)
+            next_interval = False
 
         #RESET DIC FOR PREDICTIONS
         prediction_results = {"Higher":[],"Lower":[]}    
@@ -168,11 +169,8 @@ if __name__ == "__main__":
 
             if date in new_json_data:
                 for key in json_file[date]:
-                    if key in ignore_keys:
-                        continue
-
                     if key == "correct_prediction":
-                        if json_file[date]["previous_close"] == "Lower":
+                        if json_file[date]["predicted_direction_from_current"] == "Lower":
                             if type(json_file[date]["actual_close"]) is not float:
                                 continue
                             elif type(json_file[date]["previous_close"]) is not float:
@@ -190,7 +188,9 @@ if __name__ == "__main__":
                                 json_file[date]["correct_prediction"] = True
                             else:
                                 json_file[date]["correct_prediction"] = False
-
+                    elif key in ignore_keys:
+                        continue
+                    
                     elif new_json_data[date][key] != json_file[date][key]:
                         json_file[date][key] = new_json_data[date][key]
                         if json_file[date][key] is not None:
