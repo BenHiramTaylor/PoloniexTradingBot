@@ -7,9 +7,10 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+from sklearn.externals import joblib
 
 def refresh_configs():
-    global API_Secret, API_Key, auto_trade, interval, ticker, amount_of_predictions, amount_of_training_iterations
+    global API_Secret, API_Key, auto_trade, interval, ticker, amount_of_predictions, amount_of_training_iterations, model_file_path
 
     with open('APISettings.json','r') as f:
         config = json.load(f)
@@ -21,6 +22,7 @@ def refresh_configs():
     ticker = config["Ticker"]
     amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
     amount_of_training_iterations = config["Training_Iterations"]
+    model_file_path = config["Model_File_Path"]
 
 def parse_prediction_results(dic):
     if amount_of_predictions % 100 != 0:
@@ -58,6 +60,7 @@ if __name__ == "__main__":
     ticker = config["Ticker"]
     amount_of_predictions = config["Prediction_Iterations"]
     amount_of_training_iterations = config["Training_Iterations"]
+    model_file_path = config["Model_File_Path"]
 
     # CREATE CLASS AND REQUIRED VARS
     Polo = Poloniex(API_Key,API_Secret)
@@ -201,12 +204,7 @@ if __name__ == "__main__":
 
         if update_count > 0:
             print(f"Updated JSON Log with {update_count} new records.")
-
-        # TRAIN THE DATA TO GET %
-        Start_time = dt.datetime.now().timestamp()
-        # CREATE THE MODEL
-        clf = LinearRegression()
-
+        
         # MANIPLULATE DATA FOR TRAINING
         future_forecast_time = 10
         x = np.array(df.drop(["shifted_prediction"], 1))
@@ -215,9 +213,17 @@ if __name__ == "__main__":
         x_prediction = x[-future_forecast_time:]
         x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.5)
 
-        for i in range(amount_of_training_iterations):
-            # TRAIN THE MODEL
-            clf.fit(x_train, y_train)
+        if not model_file_path:
+            # TRAIN THE DATA TO GET %
+            Start_time = dt.datetime.now().timestamp()
+            # CREATE THE MODEL
+            clf = LinearRegression()
+
+            for i in range(amount_of_training_iterations):
+                # TRAIN THE MODEL
+                clf.fit(x_train, y_train)
+        else:
+            clf = joblib.load(model_file_path)
         
         for i in range(amount_of_predictions):
             # RUN PREDICTIONS
