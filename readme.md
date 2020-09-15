@@ -21,8 +21,9 @@ Once this repository has been cloned, there is some setup required before it can
    3. Prediction_Iterations: The amount of times you wish to predict using the model for, Must be a multiple of 100.
    4. Training_Iterations: The amount of times you wish to train the model for.
    5. AutoTrade: true will allow the bot to place trades if the criteria are met, false will run the bot without trading (good for testing predictions and backtesting).
-   6. API_Secret: Your Poloniex API Secret.
-   7. API_Key: Your Poloniex API Key.
+   6. Model_File_Path: If you have a pre trained model put the full file path here to load it and predict using it.
+   7. API_Secret: Your Poloniex API Secret.
+   8. API_Key: Your Poloniex API Key.
 3. There are two ways to run this bot: 
    1. Using the locally installed Python.
       - `pip install -r requirements.txt`
