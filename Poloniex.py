@@ -27,23 +27,56 @@ class Poloniex:
         self.__TICKERS = settings["Tickers"]
         self.__CURRENCIES = settings["Currencies"]
 
-    def auto_create_df(self,ticker,interval):
+    def auto_create_df(self,ticker,interval,full_df=False):
+        skip_loop = False
         if interval not in self.__INTERVALS:
             intvls = '\n'.join(self.__INTERVALS)
             raise PoloniexError(f"Invalid Interval.\nPlease use one of the following:\n{intvls}")
         if ticker not in self.__TICKERS:
             tickers = '\n'.join(self.__TICKERS)
             raise PoloniexError(f"Invalid Ticker.\nPlease use one of the following:\n{tickers}")
-        if interval == 300:
-            start = dt.datetime.now()-dt.timedelta(weeks=14)
-        elif interval == 900:
-            start = dt.datetime.now()-dt.timedelta(weeks=42)
-        elif interval == 1800:
-            start = dt.datetime.now()-dt.timedelta(weeks=84)
+        if not full_df:
+            if interval == 300:
+                start = dt.datetime.now()-dt.timedelta(weeks=14)
+            elif interval == 900:
+                start = dt.datetime.now()-dt.timedelta(weeks=42)
+            elif interval == 1800:
+                start = dt.datetime.now()-dt.timedelta(weeks=84)
+            else:
+                start = dt.datetime(2018,1,1)
+            df = self.create_df(ticker,interval,start)
         else:
-            start = dt.datetime(2018,1,1)
-        
-        df = self.create_df(ticker,interval,start)
+            Start = dt.datetime.now().timestamp()
+            if interval == 300:
+                weeks = 14
+            elif interval == 900:
+                weeks = 42
+            elif interval == 1800:
+                weeks = 84
+            else:
+                skip_loop = True
+            if not skip_loop:
+                start = dt.datetime(2018,1,1)
+                end = start + dt.timedelta(weeks=weeks)
+                df = pd.DataFrame()
+                while True:
+                    final = False
+                    if end > dt.datetime.now():
+                        final = True
+                        end = dt.datetime.now()
+                    temp_df = self.create_df(ticker, interval, start, end=end)
+                    start = end + dt.timedelta(seconds=interval)
+                    end = start + dt.timedelta(weeks=weeks)
+                    df = df.append(temp_df)
+                    if final:
+                        df = df.reset_index().drop_duplicates(subset='ts',
+                                       keep='first').set_index('ts')
+                        run_time = dt.datetime.now().timestamp() - Start
+                        print(f"Took {run_time} seconds to load full DF.")
+                        break
+            else:
+                start = dt.datetime(2018,1,1)
+                df = self.create_df(ticker,interval,start)
         return df
     
     def create_df(self,ticker,interval,start,end=None):
