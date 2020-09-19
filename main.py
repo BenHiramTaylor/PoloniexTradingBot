@@ -90,19 +90,25 @@ if __name__ == "__main__":
                 # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
                 open_positions = Polo.load_all_open_positions()
         
-        # CREATE DF AND DUMP TO CSV
-        df = Polo.auto_create_df(ticker,interval)
-        df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
+        while True:
+            # CREATE DF AND DUMP TO CSV
+            df = Polo.auto_create_df(ticker,interval)
+            df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
 
-        # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
-        previous_close = df.tail(2).head(1)['close'].item()
-        current_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
-        next_interval =  current_interval + dt.timedelta(seconds=interval)
-        print(current_interval)
-        print(next_interval)
+            # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
+            previous_close = df.tail(2).head(1)['close'].item()
+            current_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
+            next_interval =  current_interval + dt.timedelta(seconds=interval)
+            if next_interval.timestamp()-dt.datetime.now().timestamp() > 0:
+                break
+            else:
+                print_current_interval = dt.datetime.strftime(current_interval, "%Y-%m-%d %H:%M:%S")
+                print(f"Next interval received was {print_current_interval}, which should be wrong, sleeping for 10 seconds and reloading DF")
+                time.sleep(10)
+
         # DROP NA RECORDS 
         df.dropna(inplace=True)
-        print(df.tail())
+
 
         # LOG TIMESTAMP OF LAST INTERVAL TO FILE
         LastRunTimes[ticker] = current_interval.timestamp()
@@ -178,7 +184,6 @@ if __name__ == "__main__":
         model_fit = model.fit(disp=0)
         output = model_fit.forecast()
         result = output[0][0]
-        print(result)
         # LOG PREDICTIONS BASED ON CURRENT PRICE
         if result > previous_close:
             direction = "Higher"
@@ -217,4 +222,3 @@ if __name__ == "__main__":
                 Polo.api_query(trade_type, trade_params)
         else:
             print(f"Not initiating trade, predicted price difference was less than 5.")
- 
