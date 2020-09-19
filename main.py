@@ -59,8 +59,8 @@ if __name__ == "__main__":
             elif time_since_run >= interval:
                 print(f"It has been {time_since_run} seconds since last run. running now..")
             else:
-                print(f"Not been {interval} seconds since last run, it has been {time_since_run}, sleeping for 60 seconds.")
-                time.sleep(60)
+                last_run_dt = dt.datetime.fromtimestamp(LastRun)
+                next_interval = last_run_dt + dt.timedelta(seconds=interval)
                 continue
         else:
             next_interval = next_interval + dt.timedelta(seconds=60)
