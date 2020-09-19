@@ -5,8 +5,6 @@ import os
 import time
 import numpy as np
 from statsmodels.tsa.arima_model import ARIMA
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
 
 def refresh_configs():
     global API_Secret, API_Key, auto_trade, interval, ticker, amount_of_predictions, amount_of_training_iterations, model_file_path
@@ -19,7 +17,6 @@ def refresh_configs():
     auto_trade = config["AutoTrade"]
     interval = config["Interval"]
     ticker = config["Ticker"]
-    amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
 
 if __name__ == "__main__":
     # GENERATE DEFAULT SETTINGS
@@ -31,7 +28,6 @@ if __name__ == "__main__":
     auto_trade = None
     interval = None
     ticker = None
-    amount_of_predictions = None
 
     # CREATE CLASS AND REQUIRED VARS
     Polo = Poloniex(API_Key,API_Secret)
