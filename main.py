@@ -4,10 +4,9 @@ import json
 import os
 import time
 import numpy as np
-from sklearn.linear_model import LinearRegression
+from statsmodels.tsa.arima_model import ARIMA
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
-from sklearn.externals import joblib
 
 def refresh_configs():
     global API_Secret, API_Key, auto_trade, interval, ticker, amount_of_predictions, amount_of_training_iterations, model_file_path
@@ -21,32 +20,6 @@ def refresh_configs():
     interval = config["Interval"]
     ticker = config["Ticker"]
     amount_of_predictions = config["Prediction_Iterations"] # NEEDS TO BE MULTIPLE OF 100
-    amount_of_training_iterations = config["Training_Iterations"]
-    model_file_path = config["Model_File_Path"]
-
-def parse_prediction_results(dic):
-    if amount_of_predictions % 100 != 0:
-        raise PoloniexError(f"amount_of_predictions is not a multiple of 100 it is: {amount_of_predictions}")
-    
-    scaler = 0
-    average = float(0)
-    
-    if amount_of_predictions != 100:
-        scaler = amount_of_predictions / 100
-
-    if len(dic["Higher"]) > len(dic["Lower"]):
-        direction = "Higher"
-    else:
-        direction = "Lower"
-    print(f"Number of times predicted Higher: {len(dic['Higher'])}\nNumber of times predicted Lower: {len(dic['Lower'])}")
-
-    for i in dic[direction]:
-        average = average + i
-        
-    percentage = len(dic[direction])/scaler
-    scaled_average = average/len(dic[direction])
-
-    return direction, percentage, scaled_average
 
 if __name__ == "__main__":
     # GENERATE DEFAULT SETTINGS
@@ -55,12 +28,10 @@ if __name__ == "__main__":
     API_Secret = config["API_Secret"]
     API_Key = config["API_Key"]
     # LOAD TWEAKABLE CONFIGS FROM APISettings.json
-    auto_trade = config["AutoTrade"]
-    interval = config["Interval"]
-    ticker = config["Ticker"]
-    amount_of_predictions = config["Prediction_Iterations"]
-    amount_of_training_iterations = config["Training_Iterations"]
-    model_file_path = config["Model_File_Path"]
+    auto_trade = None
+    interval = None
+    ticker = None
+    amount_of_predictions = None
 
     # CREATE CLASS AND REQUIRED VARS
     Polo = Poloniex(API_Key,API_Secret)
@@ -103,9 +74,6 @@ if __name__ == "__main__":
                 print(f"We have the next interval, sleeping until then. See you in {next_interval_sleep} seconds at {next_interval_string}")
                 time.sleep(next_interval_sleep)
 
-        #RESET DIC FOR PREDICTIONS
-        prediction_results = {"Higher":[],"Lower":[]}    
-
         # REFRESH ALL OPEN POSITIONS
         open_positions = Polo.load_all_open_positions()
         killed_positions = False
@@ -125,18 +93,20 @@ if __name__ == "__main__":
             if killed_positions:
                 # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
                 open_positions = Polo.load_all_open_positions()
- 
+        
         # CREATE DF AND DUMP TO CSV
         df = Polo.auto_create_df(ticker,interval)
         df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
+
         # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
         previous_close = df.tail(2).head(1)['close'].item()
-        df["shifted_prediction"] = df["close"].shift(-1)
-        df.rename(columns={"close":"actual_close"},inplace=True)
         current_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
         next_interval =  current_interval + dt.timedelta(seconds=interval)
+        print(current_interval)
+        print(next_interval)
         # DROP NA RECORDS 
         df.dropna(inplace=True)
+        print(df.tail())
 
         # LOG TIMESTAMP OF LAST INTERVAL TO FILE
         LastRunTimes[ticker] = current_interval.timestamp()
@@ -163,10 +133,10 @@ if __name__ == "__main__":
         for date in new_json_data:
             if date not in json_file:
                 json_file[date] = new_json_data[date]
-
+        
         # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
         update_count = 0
-        ignore_keys = ["lr_prediction","predicted_direction_from_current","previous_close","percentage_chance"]
+        ignore_keys = ["prediction","predicted_direction_from_current","previous_close"]
         
         for date in json_file:
             if date not in last_31_intervals_keys:
@@ -176,20 +146,20 @@ if __name__ == "__main__":
                 for key in json_file[date]:
                     if key == "correct_prediction":
                         if json_file[date]["predicted_direction_from_current"] == "Lower":
-                            if type(json_file[date]["actual_close"]) is not float:
+                            if type(json_file[date]["close"]) is not float:
                                 continue
                             elif type(json_file[date]["previous_close"]) is not float:
                                 continue
-                            if json_file[date]["previous_close"] > json_file[date]["actual_close"]:
+                            if json_file[date]["previous_close"] > json_file[date]["close"]:
                                 json_file[date]["correct_prediction"] = True
                             else:
                                 json_file[date]["correct_prediction"] = False
                         else:
-                            if type(json_file[date]["actual_close"]) is not float:
+                            if type(json_file[date]["close"]) is not float:
                                 continue
                             elif type(json_file[date]["previous_close"]) is not float:
                                 continue
-                            if json_file[date]["previous_close"] < json_file[date]["actual_close"]:
+                            if json_file[date]["previous_close"] < json_file[date]["close"]:
                                 json_file[date]["correct_prediction"] = True
                             else:
                                 json_file[date]["correct_prediction"] = False
@@ -204,45 +174,28 @@ if __name__ == "__main__":
 
         if update_count > 0:
             print(f"Updated JSON Log with {update_count} new records.")
-        
-        # MANIPLULATE DATA FOR TRAINING
-        future_forecast_time = 10
-        x = np.array(df.drop(["shifted_prediction"], 1))
-        y = np.array(df["shifted_prediction"])
-        x = preprocessing.scale(x)
-        x_prediction = x[-future_forecast_time:]
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.5)
 
-        if not model_file_path:
-            # TRAIN THE DATA TO GET %
-            Start_time = dt.datetime.now().timestamp()
-            # CREATE THE MODEL
-            clf = LinearRegression()
+        # TRAIN THE DATA TO GET PREDICTIONS
+        x = df.values
 
-            for i in range(amount_of_training_iterations):
-                # TRAIN THE MODEL
-                clf.fit(x_train, y_train)
+        model = ARIMA(x, order=(5,1,0))
+        model_fit = model.fit(disp=0)
+        output = model_fit.forecast()
+        result = output[0][0]
+        print(result)
+        # LOG PREDICTIONS BASED ON CURRENT PRICE
+        if result > previous_close:
+            direction = "Higher"
+            difference = result - previous_close
         else:
-            clf = joblib.load(model_file_path)
+            direction = "Lower"
+            difference = previous_close - result
         
-        for i in range(amount_of_predictions):
-            # RUN PREDICTIONS
-            prediction = (clf.predict(x_prediction))
-            
-            # LOG PREDICTIONS BASED ON CURRENT PRICE
-            if prediction[0] > previous_close:
-                prediction_results["Higher"].append(prediction[0])
-            else:
-                prediction_results['Lower'].append(prediction[0])
+        # PRINT THE RESULTS FROM THE PREDICTION
+        print(f"Predictions have predicted the price being {direction} than the previous close of: {previous_close} at the next interval of: {next_interval}.\nPrice predicted: {result}, price difference is {difference}.")
 
-        print(f"Took: {dt.datetime.strftime(dt.datetime.fromtimestamp(dt.datetime.now().timestamp() - Start_time), '%H:%M:%S')} to predict for ticker: {ticker} doing {amount_of_predictions} iterations.")
-        
-        # CALC % CHANCE OF LOWER/HIGHER
-        direction, percentage, average = parse_prediction_results(prediction_results)
-        print(f"Predictions have calculated that there is a {percentage}% chance of the price being {direction} than the previous close of: {previous_close} at the next interval of: {next_interval}.\nAverage price predicted: {average}")
-        
         # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
-        json_file[dt.datetime.strftime(current_interval,"%Y-%m-%d %H:%M:%S")] = {"actual_close":None,"shifted_prediction":None,"lr_prediction":average,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None,"percentage_chance":percentage}
+        json_file[dt.datetime.strftime(current_interval,"%Y-%m-%d %H:%M:%S")] = {"close":None,"prediction":result,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None}
 
         with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
             json.dump(json_file,f,indent=2,sort_keys=True)
@@ -253,7 +206,7 @@ if __name__ == "__main__":
             print("Not Trading, AutoTrade is set to False, to change this, please set AutoTrade to true in APISettings.json")
             continue
 
-        if percentage >= 75:
+        if difference >= 5:
             if direction == "Lower":
                 trade_type = "sell"
             else:
@@ -267,4 +220,5 @@ if __name__ == "__main__":
                 trade_params = {"currencyPair":ticker, "rate":rate, "amount":trade_amount}
                 Polo.api_query(trade_type, trade_params)
         else:
-            print(f"Not initiating trade, got less than 75% chance on prediction: got {percentage}%")
+            print(f"Not initiating trade, predicted price difference was less than 5.")
+ 
