@@ -91,13 +91,13 @@ if __name__ == "__main__":
                 open_positions = Polo.load_all_open_positions()
         
         # CREATE DF AND DUMP TO JSON
-        if not os.path.exists(f"JSON\\{ticker}_{interval}_log.json"):
+        if not os.path.exists(f"JSON\\{ticker}_{interval}_price_log.json"):
             print("Loading full DataFrame.")
             df = Polo.auto_create_df(ticker,interval,full_df=True)
             df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
             json_string = df.to_json(orient="index", date_format=None)
             new_json_data = json.loads(json_string)
-            with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
+            with open(f"JSON\\{ticker}_{interval}_price_log.json","w")as f:
                 json.dump(new_json_data,f,indent=2)
             # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
             previous_close = df.tail(2).head(1)['close'].item()
@@ -105,9 +105,7 @@ if __name__ == "__main__":
             next_interval =  current_interval + dt.timedelta(seconds=interval)
         else:
             print("Loading existing DataFrame and updating with new records.")
-            df = Polo.load_df_from_json(f"JSON\\{ticker}_{interval}_log.json")
-            # df.drop(["correct_prediction","predicted_direction_from_current","prediction","previous_close"], axis=1, inplace=True, errors="ignore")
-            # df.dropna(inplace=True)
+            df = Polo.load_df_from_json(f"JSON\\{ticker}_{interval}_price_log.json")
             while True:
                 # GET UPDATED DF AND JOIN
                 new_df = Polo.auto_create_df(ticker,interval)
@@ -128,7 +126,7 @@ if __name__ == "__main__":
             print(df.head())
             json_string = df.to_json(orient="index",date_format=None)
             new_json_data = json.loads(json_string)
-            with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
+            with open(f"JSON\\{ticker}_{interval}_price_log.json","w")as f:
                 json.dump(new_json_data,f,indent=2)
 
         # LOG TIMESTAMP OF LAST INTERVAL TO FILE
@@ -136,7 +134,7 @@ if __name__ == "__main__":
         with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
             json.dump(LastRunTimes,f)
 
-        with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
+        with open(f"JSON\\{ticker}_{interval}_price_log.json","r") as f:
             json_file = json.load(f)
         
         # OPEN TRADE LOG
@@ -144,57 +142,41 @@ if __name__ == "__main__":
             with open(f"JSON\\{ticker}_{interval}_trade_log.json","w") as f:
                 json.dump({},f)
         with open(f"JSON\\{ticker}_{interval}_trade_log.json","r") as f:
-            trade_log = json.load(f)
-
-        # GET LAST 31 INTERVALS TO SPEED UP JSON EDITING
-        last_31_intervals_keys = list(json_file.keys())
-        last_31_intervals_keys = last_31_intervals_keys[-31:]
-
-        # LOAD ANY MISSING DATA
-        for date in new_json_data:
-            if date not in json_file:
-                json_file[date] = new_json_data[date]
+            trade_log = json.load(f)        
         
         # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
         update_count = 0
-        ignore_keys = ["prediction","predicted_direction_from_current","previous_close"]
-        
-        for date in json_file:
-            if date not in last_31_intervals_keys:
+        for date in new_json_data:
+            if date in trade_log:
+                if new_json_data[date]["close"] != trade_log[date]["close"]:
+                    update_count += 1
+                    trade_log[date]["close"] = new_json_data[date]["close"]
+
+        for date in trade_log:
+            if trade_log[date]["correct_prediction"] is not None:
                 continue
+            if trade_log[date]["predicted_direction_from_current"] == "Lower":
+                if type(trade_log[date]["close"]) is not float:
+                    continue
+                elif type(trade_log[date]["previous_close"]) is not float:
+                    continue
+                if trade_log[date]["previous_close"] > trade_log[date]["close"]:
+                    trade_log[date]["correct_prediction"] = True
+                else:
+                    trade_log[date]["correct_prediction"] = False
+            else:
+                if type(trade_log[date]["close"]) is not float:
+                    continue
+                elif type(trade_log[date]["previous_close"]) is not float:
+                    continue
+                if trade_log[date]["previous_close"] < trade_log[date]["close"]:
+                    trade_log[date]["correct_prediction"] = True
+                else:
+                    trade_log[date]["correct_prediction"] = False
 
-            if date in new_json_data:
-                for key in json_file[date]:
-                    if key == "correct_prediction":
-                        if json_file[date]["predicted_direction_from_current"] == "Lower":
-                            if type(json_file[date]["close"]) is not float:
-                                continue
-                            elif type(json_file[date]["previous_close"]) is not float:
-                                continue
-                            if json_file[date]["previous_close"] > json_file[date]["close"]:
-                                json_file[date]["correct_prediction"] = True
-                            else:
-                                json_file[date]["correct_prediction"] = False
-                        else:
-                            if type(json_file[date]["close"]) is not float:
-                                continue
-                            elif type(json_file[date]["previous_close"]) is not float:
-                                continue
-                            if json_file[date]["previous_close"] < json_file[date]["close"]:
-                                json_file[date]["correct_prediction"] = True
-                            else:
-                                json_file[date]["correct_prediction"] = False
-                    elif key in ignore_keys:
-                        continue
-
-                    elif new_json_data[date][key] != json_file[date][key]:
-                        json_file[date][key] = new_json_data[date][key]
-                        if json_file[date][key] is not None:
-                            update_count += 1
-                            print(f"Changing {key}: {json_file[date][key]} to {key}: {new_json_data[date][key]} for date {date} in log.")                        
 
         if update_count > 0:
-            print(f"Updated JSON Log with {update_count} new records.")
+            print(f"Updated JSON Trade Log with {update_count} new records.")
 
         # TRAIN THE DATA TO GET PREDICTIONS
         x = df["close"].values
@@ -214,15 +196,10 @@ if __name__ == "__main__":
         # PRINT THE RESULTS FROM THE PREDICTION
         print(f"Predictions have predicted the price being {direction} than the previous close of: {previous_close} at the next interval of: {next_interval}.\nPrice predicted: {result}, price difference is {difference}.")
 
-        # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
-        json_file[dt.datetime.strftime(current_interval,"%Y-%m-%d %H:%M:%S")] = {"close":None,"prediction":result,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None}
-
-        with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
-            json.dump(json_file,f,indent=2,sort_keys=True)
-
         # ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF THERE ARE ANY OPEN TRADES OF THAT TICKER 
         # ONLY TRADES IF % CHANCE IS > 75% AND IF AUTOTRADE IS SET TO TRUE
         if not auto_trade:
+            took_trade = False
             print("Not Trading, AutoTrade is set to False, to change this, please set AutoTrade to true in APISettings.json")
             continue
 
@@ -233,11 +210,20 @@ if __name__ == "__main__":
                 trade_type = "buy"
             if ticker in open_positions:
                 print(f"Not initiating trade, position already open for ticker {ticker}.")
+                took_trade = False
             else:
                 trade_amount = Polo.get_1_percent_trade_size(ticker, "BTC")
                 rate = Polo.get_current_price(ticker)
                 print(f"Placing Trade for ticker: {ticker}, {trade_type}ing an amount of {trade_amount} at a rate of {rate} per 1.")
                 trade_params = {"currencyPair":ticker, "rate":rate, "amount":trade_amount}
                 Polo.api_query(trade_type, trade_params)
+                took_trade = True
         else:
+            took_trade = False
             print(f"Not initiating trade, predicted price difference was less than 5.")
+        
+        # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
+        trade_log[dt.datetime.strftime(current_interval,"%Y-%m-%d %H:%M:%S")] = {"close":None,"prediction":result,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None,"Took Trade":took_trade}
+
+        with open(f"JSON\\{ticker}_{interval}_trade_log.json","w")as f:
+            json.dump(trade_log,f,indent=2,sort_keys=True)
