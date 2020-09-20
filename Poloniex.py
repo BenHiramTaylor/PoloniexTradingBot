@@ -55,6 +55,7 @@ class Poloniex:
             elif interval == 1800:
                 weeks = 84
             else:
+                weeks = False
                 skip_loop = True
             if not skip_loop:
                 start = dt.datetime(2018,1,1)
