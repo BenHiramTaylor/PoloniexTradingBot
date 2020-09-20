@@ -122,6 +122,7 @@ class Poloniex:
             raise PoloniexError("File path does not exist, should not be trying to load DF.")
         df = pd.read_json(file_path, orient="index",convert_dates=False)
         df.index.name = "period"
+        df.index = df.index.astype(str)
         return df
     
     def get_current_ticker_data(self,Ticker="All"):
