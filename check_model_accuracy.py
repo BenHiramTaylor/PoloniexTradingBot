@@ -12,9 +12,10 @@ if __name__ == "__main__":
         total_predictions = list()
         correct_predictions = list()
         trades_taken = list()
+        correct_trades_taken = list()
         with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
             data = json.load(f)
-            
+
         for period in data:
             if "correct_prediction" not in data[period]:
                 continue
@@ -31,6 +32,8 @@ if __name__ == "__main__":
 
             if difference > 5:
                 trades_taken.append(1)
+                if data[period]["correct_prediction"]:
+                    correct_trades_taken.append(1)
 
-        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)}, out of this amount {len(trades_taken)} were taken.")
+        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)}, out of this amount {len(trades_taken)} were taken and {len(correct_trades_taken)} were correct.")
             
