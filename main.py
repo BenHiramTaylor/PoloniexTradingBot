@@ -90,42 +90,54 @@ if __name__ == "__main__":
                 # REFRESH ALL OPEN POSITIONS AFTER KILLING OLD ONES
                 open_positions = Polo.load_all_open_positions()
         
-        while True:
-            # CREATE DF AND DUMP TO CSV
-            df = Polo.auto_create_df(ticker,interval)
+        # CREATE DF AND DUMP TO JSON
+        if not os.path.exists(f"JSON\\{ticker}_{interval}_log.json"):
+            print("Loading full DataFrame.")
+            df = Polo.auto_create_df(ticker,interval,full_df=True)
             df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
-
+            json_string = df.to_json(orient="index")
+            new_json_data = json.loads(json_string)
+            with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
+                json.dump(new_json_data,f,indent=2)
             # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
             previous_close = df.tail(2).head(1)['close'].item()
             current_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
             next_interval =  current_interval + dt.timedelta(seconds=interval)
-            if next_interval.timestamp()-dt.datetime.now().timestamp() > 0:
-                break
-            else:
-                print_current_interval = dt.datetime.strftime(current_interval, "%Y-%m-%d %H:%M:%S")
-                print(f"Next interval received was {print_current_interval}, which should be wrong, sleeping for 10 seconds and reloading DF")
-                time.sleep(10)
+        else:
+            print("Loading existing DataFrame and updating with new records.")
+            df = Polo.load_df_from_json(f"JSON\\{ticker}_{interval}_log.json")
+            df.drop(["correct_prediction","predicted_direction_from_current","prediction","previous_close"], axis=1, inplace=True)
+            df.dropna(inplace=True)
+            while True:
+                # GET UPDATED DF AND JOIN
+                new_df = Polo.auto_create_df(ticker,interval)
+                new_df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
+                # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
+                previous_close = new_df.tail(2).head(1)['close'].item()
+                current_interval = dt.datetime.strptime(new_df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
+                next_interval =  current_interval + dt.timedelta(seconds=interval)
+                if next_interval.timestamp()-dt.datetime.now().timestamp() > 0:
+                    break
+                else:
+                    print_current_interval = dt.datetime.strftime(current_interval, "%Y-%m-%d %H:%M:%S")
+                    print(f"Next interval received was {print_current_interval}, which should be wrong, sleeping for 5 seconds and reloading DataFrame")
+                    time.sleep(5)
 
-        # DROP NA RECORDS 
-        df.dropna(inplace=True)
-
+            df = df.append(new_df)
+            df = df.reset_index().drop_duplicates(subset='ts', keep='first').set_index('ts')
 
         # LOG TIMESTAMP OF LAST INTERVAL TO FILE
         LastRunTimes[ticker] = current_interval.timestamp()
         with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
             json.dump(LastRunTimes,f)
 
-        # GENERATE JSON LOG IF NOT PRESENT OR LOAD EXISTING
         json_string = df.to_json(orient="index")
         new_json_data = json.loads(json_string)
-
-        if not os.path.exists(f"JSON\\{ticker}_{interval}_log.json"):
-            with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
-                json.dump(new_json_data,f,indent=2)
+        with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
+            json.dump(new_json_data,f,indent=2)
 
         with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
             json_file = json.load(f)
-
 
         # GET LAST 31 INTERVALS TO SPEED UP JSON EDITING
         last_31_intervals_keys = list(json_file.keys())
