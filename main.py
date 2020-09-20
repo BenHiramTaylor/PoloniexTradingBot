@@ -105,8 +105,8 @@ if __name__ == "__main__":
             next_interval =  current_interval + dt.timedelta(seconds=interval)
         else:
             print("Loading existing DataFrame and updating with new records.")
-
-        df = Polo.load_df_from_json(f"JSON\\{ticker}_{interval}_price_log.json")
+            df = Polo.load_df_from_json(f"JSON\\{ticker}_{interval}_price_log.json")
+            
         while True:
             # GET UPDATED DF
             new_df = Polo.auto_create_df(ticker,interval)
