@@ -6,7 +6,6 @@
 - You input an invalid Currency when asked.
 - You input an invalid Interval to trade.
 - You call an invalid API Command.
-- Your Prediction_Iterations is not a multiple of 100.
 - The account balance you are trying to AutoTrade is 0.
 - You kill the script or container manually. **(Be Warned, This will not close open trades.)**
 
@@ -18,12 +17,9 @@ Once this repository has been cloned, there is some setup required before it can
 2. Fill in the values of that JSON with your personal settings.
    1. Ticker: The Poloniex ticker code.
    2. Interval: The Interval you wish to trade in seconds.
-   3. Prediction_Iterations: The amount of times you wish to predict using the model for, Must be a multiple of 100.
-   4. Training_Iterations: The amount of times you wish to train the model for.
-   5. AutoTrade: true will allow the bot to place trades if the criteria are met, false will run the bot without trading (good for testing predictions and backtesting).
-   6. Model_File_Path: If you have a pre trained model put the full file path here to load it and predict using it.
-   7. API_Secret: Your Poloniex API Secret.
-   8. API_Key: Your Poloniex API Key.
+   3. AutoTrade: true will allow the bot to place trades if the criteria are met, false will run the bot without trading (good for testing predictions and backtesting).
+   4. API_Secret: Your Poloniex API Secret.
+   5. API_Key: Your Poloniex API Key.
 3. There are two ways to run this bot: 
    1. Using the locally installed Python.
       - `pip install -r requirements.txt`
