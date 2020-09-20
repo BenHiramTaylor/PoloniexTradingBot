@@ -202,9 +202,9 @@ class Poloniex:
             while True:
                 r = requests.post(self.__PRIVATE_URL, data=params, headers=headers)
                 if r.status_code != 200:
-                    print("Hit Rate limit. Sleeping for 1 Second")
+                    print("Hit Rate limit. Sleeping for 3 Second")
+                    time.sleep(3)
                     params["nonce"] = int(dt.datetime.now().timestamp())
-                    time.sleep(1)
                 else:
                     break
 
