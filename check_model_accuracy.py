@@ -6,7 +6,7 @@ if __name__ == "__main__":
         config = json.load(f)
     interval = config["Interval"]
     ticker = config["Ticker"]
-    if not os.path.exists(f"JSON\\{ticker}_{interval}_log.json"):
+    if not os.path.exists(f"JSON\\{ticker}_{interval}_trade_log.json"):
         print(f"There is no saved data to analyse with the ticker: {ticker} at the interval {interval}.")
     else:
         total_predictions = list()
@@ -17,7 +17,7 @@ if __name__ == "__main__":
             data = json.load(f)
 
         for period in data:
-            if "correct_prediction" not in data[period]:
+            if not data[period]["correct_predictions"]:
                 continue
 
             if data[period]["correct_prediction"]:
@@ -34,6 +34,6 @@ if __name__ == "__main__":
                 trades_taken.append(1)
                 if data[period]["correct_prediction"]:
                     correct_trades_taken.append(1)
-
-        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)}, out of this amount {len(trades_taken)} were taken and {len(correct_trades_taken)} of those were correct.")
+        percentage = (len(total_predictions)/100) * len(correct_predictions)
+        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)} This is an overall accuracy of {percentage}%\nOut of this amount {len(trades_taken)} were taken and {len(correct_trades_taken)} of those were correct.")
             
