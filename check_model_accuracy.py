@@ -35,5 +35,5 @@ if __name__ == "__main__":
                 if data[period]["correct_prediction"]:
                     correct_trades_taken.append(1)
 
-        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)}, out of this amount {len(trades_taken)} were taken and {len(correct_trades_taken)} were correct.")
+        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)}, out of this amount {len(trades_taken)} were taken and {len(correct_trades_taken)} of those were correct.")
             
