@@ -125,6 +125,10 @@ if __name__ == "__main__":
 
             df = df.append(new_df)
             df = df.reset_index().drop_duplicates(subset='ts', keep='first').set_index('ts')
+            json_string = df.to_json(orient="index")
+            new_json_data = json.loads(json_string)
+            with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
+                json.dump(new_json_data,f,indent=2)
 
         # LOG TIMESTAMP OF LAST INTERVAL TO FILE
         LastRunTimes[ticker] = current_interval.timestamp()
