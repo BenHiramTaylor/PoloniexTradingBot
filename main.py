@@ -95,10 +95,10 @@ if __name__ == "__main__":
             print("Loading full DataFrame.")
             df = Polo.auto_create_df(ticker,interval,full_df=True)
             df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
-            json_string = df.to_json(orient="index", date_format=None)
+            json_string = df.to_json(orient="index")
             new_json_data = json.loads(json_string)
             with open(f"JSON\\{ticker}_{interval}_price_log.json","w")as f:
-                json.dump(new_json_data,f,indent=2)
+                json.dump(new_json_data,f,indent=2,sort_keys=True)
             # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
             previous_close = df.tail(2).head(1)['close'].item()
             current_interval = dt.datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d %H:%M:%S")
@@ -107,7 +107,7 @@ if __name__ == "__main__":
             print("Loading existing DataFrame and updating with new records.")
             df = Polo.load_df_from_json(f"JSON\\{ticker}_{interval}_price_log.json")
             while True:
-                # GET UPDATED DF AND JOIN
+                # GET UPDATED DF
                 new_df = Polo.auto_create_df(ticker,interval)
                 new_df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
                 # GET PREVIOUS CLOSE FOR HIGHER/LOWER CHECKS
@@ -120,14 +120,13 @@ if __name__ == "__main__":
                     print_current_interval = dt.datetime.strftime(current_interval, "%Y-%m-%d %H:%M:%S")
                     print(f"Current interval received was {print_current_interval}, which should be wrong, sleeping for 5 seconds and reloading DataFrame")
                     time.sleep(5)
-
+            
             df = df.append(new_df)
             df = df.reset_index().drop_duplicates(subset='period', keep='first').set_index('period')
-            print(df.head())
-            json_string = df.to_json(orient="index",date_format=None)
+            json_string = df.to_json(orient="index")
             new_json_data = json.loads(json_string)
             with open(f"JSON\\{ticker}_{interval}_price_log.json","w")as f:
-                json.dump(new_json_data,f,indent=2)
+                json.dump(new_json_data,f,indent=2,sort_keys=True)
 
         # LOG TIMESTAMP OF LAST INTERVAL TO FILE
         LastRunTimes[ticker] = current_interval.timestamp()
