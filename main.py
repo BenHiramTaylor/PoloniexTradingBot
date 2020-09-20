@@ -221,7 +221,7 @@ if __name__ == "__main__":
             print("Not Trading, AutoTrade is set to False, to change this, please set AutoTrade to true in APISettings.json")
         
         # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
-        trade_log[dt.datetime.strftime(current_interval,"%Y-%m-%d %H:%M:%S")] = {"close":None,"prediction":result,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None,"Took Trade":took_trade}
+        trade_log[dt.datetime.strftime(current_interval,"%Y-%m-%d %H:%M:%S")] = {"close":None,"prediction":result,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None,"took_trade":took_trade}
 
         with open(f"JSON\\{ticker}_{interval}_trade_log.json","w")as f:
             json.dump(trade_log,f,indent=2,sort_keys=True)
