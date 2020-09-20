@@ -198,29 +198,28 @@ if __name__ == "__main__":
 
         # ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF THERE ARE ANY OPEN TRADES OF THAT TICKER 
         # ONLY TRADES IF % CHANCE IS > 75% AND IF AUTOTRADE IS SET TO TRUE
-        if not auto_trade:
-            took_trade = False
-            print("Not Trading, AutoTrade is set to False, to change this, please set AutoTrade to true in APISettings.json")
-            continue
-
-        if difference >= 5:
-            if direction == "Lower":
-                trade_type = "sell"
+        if auto_trade:
+            if difference >= 5:
+                if direction == "Lower":
+                    trade_type = "sell"
+                else:
+                    trade_type = "buy"
+                if ticker in open_positions:
+                    print(f"Not initiating trade, position already open for ticker {ticker}.")
+                    took_trade = False
+                else:
+                    trade_amount = Polo.get_1_percent_trade_size(ticker, "BTC")
+                    rate = Polo.get_current_price(ticker)
+                    print(f"Placing Trade for ticker: {ticker}, {trade_type}ing an amount of {trade_amount} at a rate of {rate} per 1.")
+                    trade_params = {"currencyPair":ticker, "rate":rate, "amount":trade_amount}
+                    Polo.api_query(trade_type, trade_params)
+                    took_trade = True
             else:
-                trade_type = "buy"
-            if ticker in open_positions:
-                print(f"Not initiating trade, position already open for ticker {ticker}.")
                 took_trade = False
-            else:
-                trade_amount = Polo.get_1_percent_trade_size(ticker, "BTC")
-                rate = Polo.get_current_price(ticker)
-                print(f"Placing Trade for ticker: {ticker}, {trade_type}ing an amount of {trade_amount} at a rate of {rate} per 1.")
-                trade_params = {"currencyPair":ticker, "rate":rate, "amount":trade_amount}
-                Polo.api_query(trade_type, trade_params)
-                took_trade = True
+                print(f"Not initiating trade, predicted price difference was less than 5.")
         else:
             took_trade = False
-            print(f"Not initiating trade, predicted price difference was less than 5.")
+            print("Not Trading, AutoTrade is set to False, to change this, please set AutoTrade to true in APISettings.json")
         
         # UPDATE JSON DICT WITH NEW PREDICTION DATA AND DUMP IT
         trade_log[dt.datetime.strftime(current_interval,"%Y-%m-%d %H:%M:%S")] = {"close":None,"prediction":result,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None,"Took Trade":took_trade}
