@@ -70,7 +70,7 @@ class Poloniex:
                     end = start + dt.timedelta(weeks=weeks)
                     df = df.append(temp_df)
                     if final:
-                        df = df.reset_index().drop_duplicates(subset='ts', keep='first').set_index('ts')
+                        df = df.reset_index().drop_duplicates(subset='period', keep='first').set_index('ts')
                         run_time = dt.datetime.now().timestamp() - Start
                         print(f"Took {run_time} seconds to load full DF.")
                         break
@@ -108,20 +108,20 @@ class Poloniex:
             for key in i:
                 if key == "date":
                     dtobj = dt.datetime.fromtimestamp(i[key])
-                    tempdic['ts'] = dt.datetime.strftime(dtobj,"%Y-%m-%d %H:%M:%S")
+                    tempdic['period'] = dt.datetime.strftime(dtobj,"%Y-%m-%d %H:%M:%S")
                 else:
                     tempdic[key] = i[key]
             data.append(tempdic)
 
         df = pd.DataFrame(data)
-        df.set_index("ts",inplace=True)
+        df.set_index("period",inplace=True)
         return df
 
     def load_df_from_json(self,file_path):
         if not os.path.exists(file_path):
             raise PoloniexError("File path does not exist, should not be trying to load DF.")
         df = pd.read_json(file_path, orient="index")
-        df.index.name = "ts"
+        df.index.name = "period"
         return df
     
     def get_current_ticker_data(self,Ticker="All"):

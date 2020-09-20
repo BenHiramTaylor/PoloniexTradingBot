@@ -124,7 +124,7 @@ if __name__ == "__main__":
                     time.sleep(5)
 
             df = df.append(new_df)
-            df = df.reset_index().drop_duplicates(subset='ts', keep='first').set_index('ts')
+            df = df.reset_index().drop_duplicates(subset='period', keep='first').set_index('period')
             json_string = df.to_json(orient="index")
             new_json_data = json.loads(json_string)
             with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
@@ -134,11 +134,6 @@ if __name__ == "__main__":
         LastRunTimes[ticker] = current_interval.timestamp()
         with open(f"JSON\\LastRunTimes_{interval}.json","w") as f:
             json.dump(LastRunTimes,f)
-
-        json_string = df.to_json(orient="index")
-        new_json_data = json.loads(json_string)
-        with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
-            json.dump(new_json_data,f,indent=2)
 
         with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
             json_file = json.load(f)
