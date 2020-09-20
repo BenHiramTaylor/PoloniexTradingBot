@@ -121,6 +121,7 @@ class Poloniex:
         if not os.path.exists(file_path):
             raise PoloniexError("File path does not exist, should not be trying to load DF.")
         df = pd.read_json(file_path, orient="index")
+        df.index.name = "ts"
         return df
     
     def get_current_ticker_data(self,Ticker="All"):
