@@ -146,8 +146,8 @@ if __name__ == "__main__":
         
         # UPDATE ALL LOG RECORDS WITH THE ACTUAL CLOSE, IF MISSING, CHECK IF PAST PREDICTIONS ARE CORRECT
         update_count = 0
-        for date in new_json_data:
-            if date in trade_log:
+        for date in trade_log:
+            if date in new_json_data:
                 if new_json_data[date]["close"] != trade_log[date]["close"]:
                     update_count += 1
                     trade_log[date]["close"] = new_json_data[date]["close"]
