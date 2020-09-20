@@ -13,27 +13,31 @@ if __name__ == "__main__":
         correct_predictions = list()
         trades_taken = list()
         correct_trades_taken = list()
-        with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
+        with open(f"JSON\\{ticker}_{interval}_trade_log.json","r") as f:
             data = json.load(f)
 
         for period in data:
-            if not data[period]["correct_predictions"]:
+            if data[period]["correct_prediction"] is None:
                 continue
+
+            total_predictions.append(1)
 
             if data[period]["correct_prediction"]:
                 correct_predictions.append(1)
 
-            total_predictions.append(1)
-
-            if data[period]["predicted_direction_from_current"] == "Higher":
-                difference = data[period]["prediction"] - data[period]["previous_close"]
-            else:
-                difference = data[period]["previous_close"] - data[period]["prediction"]
-
-            if difference > 5:
+            if data[period]["took_trade"]:
                 trades_taken.append(1)
                 if data[period]["correct_prediction"]:
                     correct_trades_taken.append(1)
-        percentage = (len(total_predictions)/100) * len(correct_predictions)
-        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)} This is an overall accuracy of {percentage}%\nOut of this amount {len(trades_taken)} were taken and {len(correct_trades_taken)} of those were correct.")
+
+        if len(total_predictions) > 0:
+            prediction_percentage = len(correct_predictions)/len(total_predictions)*100
+        else:
+            prediction_percentage = 0
+            
+        if len(trades_taken) > 0:
+            taken_percentage = len(correct_trades_taken)/len(trades_taken)*100
+        else:
+            taken_percentage = 0
+        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)} This is an overall accuracy of {prediction_percentage}%\nOut of this amount {len(trades_taken)} were taken and {len(correct_trades_taken)} of those were correct, this is an actual accuracy of {taken_percentage}%.")
             
