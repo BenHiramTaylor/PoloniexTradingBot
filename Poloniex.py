@@ -120,7 +120,7 @@ class Poloniex:
     def load_df_from_json(self,file_path):
         if not os.path.exists(file_path):
             raise PoloniexError("File path does not exist, should not be trying to load DF.")
-        df = pd.read_json(file_path, orient="index")
+        df = pd.read_json(file_path, orient="index",convert_dates=False)
         df.index.name = "period"
         return df
     

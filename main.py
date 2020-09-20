@@ -95,7 +95,7 @@ if __name__ == "__main__":
             print("Loading full DataFrame.")
             df = Polo.auto_create_df(ticker,interval,full_df=True)
             df.drop(["high","low","open","volume","quoteVolume","weightedAverage"],axis=1,inplace=True)
-            json_string = df.to_json(orient="index")
+            json_string = df.to_json(orient="index", date_format=None)
             new_json_data = json.loads(json_string)
             with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
                 json.dump(new_json_data,f,indent=2)
@@ -106,8 +106,8 @@ if __name__ == "__main__":
         else:
             print("Loading existing DataFrame and updating with new records.")
             df = Polo.load_df_from_json(f"JSON\\{ticker}_{interval}_log.json")
-            df.drop(["correct_prediction","predicted_direction_from_current","prediction","previous_close"], axis=1, inplace=True)
-            df.dropna(inplace=True)
+            # df.drop(["correct_prediction","predicted_direction_from_current","prediction","previous_close"], axis=1, inplace=True, errors="ignore")
+            # df.dropna(inplace=True)
             while True:
                 # GET UPDATED DF AND JOIN
                 new_df = Polo.auto_create_df(ticker,interval)
@@ -120,12 +120,13 @@ if __name__ == "__main__":
                     break
                 else:
                     print_current_interval = dt.datetime.strftime(current_interval, "%Y-%m-%d %H:%M:%S")
-                    print(f"Next interval received was {print_current_interval}, which should be wrong, sleeping for 5 seconds and reloading DataFrame")
+                    print(f"Current interval received was {print_current_interval}, which should be wrong, sleeping for 5 seconds and reloading DataFrame")
                     time.sleep(5)
 
             df = df.append(new_df)
             df = df.reset_index().drop_duplicates(subset='period', keep='first').set_index('period')
-            json_string = df.to_json(orient="index")
+            print(df.head())
+            json_string = df.to_json(orient="index",date_format=None)
             new_json_data = json.loads(json_string)
             with open(f"JSON\\{ticker}_{interval}_log.json","w")as f:
                 json.dump(new_json_data,f,indent=2)
@@ -137,6 +138,13 @@ if __name__ == "__main__":
 
         with open(f"JSON\\{ticker}_{interval}_log.json","r") as f:
             json_file = json.load(f)
+        
+        # OPEN TRADE LOG
+        if not os.path.exists(f"JSON\\{ticker}_{interval}_trade_log.json"):
+            with open(f"JSON\\{ticker}_{interval}_trade_log.json","w") as f:
+                json.dump({},f)
+        with open(f"JSON\\{ticker}_{interval}_trade_log.json","r") as f:
+            trade_log = json.load(f)
 
         # GET LAST 31 INTERVALS TO SPEED UP JSON EDITING
         last_31_intervals_keys = list(json_file.keys())
@@ -189,7 +197,7 @@ if __name__ == "__main__":
             print(f"Updated JSON Log with {update_count} new records.")
 
         # TRAIN THE DATA TO GET PREDICTIONS
-        x = df.values
+        x = df["close"].values
 
         model = ARIMA(x, order=(5,1,0))
         model_fit = model.fit(disp=0)
