@@ -70,7 +70,7 @@ class Poloniex:
                     end = start + dt.timedelta(weeks=weeks)
                     df = df.append(temp_df)
                     if final:
-                        df = df.reset_index().drop_duplicates(subset='period', keep='first').set_index('ts')
+                        df = df.reset_index().drop_duplicates(subset='period', keep='first').set_index('period')
                         run_time = dt.datetime.now().timestamp() - Start
                         print(f"Took {run_time} seconds to load full DF.")
                         break
