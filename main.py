@@ -177,6 +177,10 @@ if __name__ == "__main__":
         if update_count > 0:
             print(f"Updated JSON Trade Log with {update_count} new records.")
 
+        # GRAB ONLY LAST THIRD OF THE DATAFRAME
+        third = int(len(df)*0.66)
+        df = df.iloc[third:]
+
         # TRAIN THE DATA TO GET PREDICTIONS
         x = df["close"].values
 
