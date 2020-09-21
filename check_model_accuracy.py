@@ -14,6 +14,7 @@ if __name__ == "__main__":
         trades_taken = list()
         correct_trades_taken = list()
         could_have_taken = list()
+        could_have_taken_correct = list()
         with open(f"JSON\\{ticker}_{interval}_trade_log.json","r") as f:
             data = json.load(f)
 
@@ -34,9 +35,13 @@ if __name__ == "__main__":
             if data[period]["predicted_direction_from_current"] == "Higher":
                 if (data[period]["prediction"] - data[period]["previous_close"]) > 5:
                     could_have_taken.append(1)
+                    if (data[period]["close"] - data[period]["previous_close"]) > 5:
+                        could_have_taken_correct.append(1)
             else:
                 if (data[period]["previous_close"] - data[period]["prediction"]) > 5:
                     could_have_taken.append(1)
+                    if (data[period]["previous_close"] - data[period]["close"]) > 5:
+                        could_have_taken_correct.append(1)
 
         if len(total_predictions) > 0:
             prediction_percentage = len(correct_predictions)/len(total_predictions)*100
@@ -47,5 +52,5 @@ if __name__ == "__main__":
             taken_percentage = len(correct_trades_taken)/len(trades_taken)*100
         else:
             taken_percentage = 0
-        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)} This is an overall accuracy of {prediction_percentage}%\nOut of this amount {len(trades_taken)} were taken and {len(correct_trades_taken)} of those were correct, this is an actual accuracy of {taken_percentage}%.\nOut of {len(total_predictions)} predictions, {len(could_have_taken)} trades could have been taken.")
+        print(f"Total number of correct predictions {len(correct_predictions)}/{len(total_predictions)} This is an overall accuracy of {prediction_percentage}%\nOut of this amount {len(trades_taken)} were taken and {len(correct_trades_taken)} of those were correct, this is an actual accuracy of {taken_percentage}%.\nOut of {len(total_predictions)} predictions, {len(could_have_taken)} trades could have been taken.\nOut of that amount, {len(could_have_taken_correct)} would have been profitable.")
             
