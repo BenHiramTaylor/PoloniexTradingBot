@@ -23,7 +23,7 @@ if __name__ == "__main__":
     interval = config["Interval"]
     ticker = config["Ticker"]
     Polo = Poloniex(API_Key,API_Secret)
-    start_day = dt.datetime(2019,1,1)
+    start_day = dt.datetime(2019,8,1)
     last_day = start_day + dt.timedelta(days=training_data_days)
     training_dates = list()
     counter = 0
