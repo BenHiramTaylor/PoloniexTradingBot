@@ -26,7 +26,6 @@ if __name__ == "__main__":
     start_day = dt.datetime(2019,8,1)
     last_day = start_day + dt.timedelta(days=training_data_days)
     training_dates = list()
-    counter = 0
 
     # GENERATE ALL INTERVALS BETWEEN THE PERIOD
     start_day_string = dt.datetime.strftime(start_day, "%Y-%m-%d %H:%M:%S")
@@ -66,7 +65,6 @@ if __name__ == "__main__":
 
     while True:
         print(f"Running iteration {counter} of backtester.")
-        counter += 1
         # OPEN TRADE LOG
         with open(f"Backtesting\\{ticker}_{interval}_trade_log_arima_order_{str(arima_order)}_training_data_days_{str(training_data_days)}.json","r") as f:
             trade_log = json.load(f)
@@ -106,10 +104,12 @@ if __name__ == "__main__":
         trade_log[dt.datetime.strftime(current_interval,"%Y-%m-%d %H:%M:%S")] = {"close":None,"prediction":result,"predicted_direction_from_current":direction,"previous_close":previous_close,"correct_prediction":None,"took_trade":took_trade}
         
         # ADD NEXT INTERVAL DATA TO BACKTESTING DATA
+        first_key = list(backtesting_data.keys())[0]
+        current_interval_string = dt.datetime.strftime(current_interval, "%Y-%m-%d %H:%M:%S")
+        print(f"Backtested data using {first_key} to {current_interval_string}.")
         if next_interval_string in all_data:
             backtesting_data[next_interval_string] = all_data[next_interval_string]
         # DELETE OLDEST VAL
-        first_key = list(backtesting_data.keys())[0]
         del backtesting_data[first_key]
 
         # UPDATE CLOSE PRICES
