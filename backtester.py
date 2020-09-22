@@ -64,7 +64,6 @@ if __name__ == "__main__":
     print(f"Loaded initial backtesting dataframe of {len(backtesting_data)} values.")
 
     while True:
-        print(f"Running iteration {counter} of backtester.")
         # OPEN TRADE LOG
         with open(f"Backtesting\\{ticker}_{interval}_trade_log_arima_order_{str(arima_order)}_training_data_days_{str(training_data_days)}.json","r") as f:
             trade_log = json.load(f)
