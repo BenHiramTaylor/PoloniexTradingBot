@@ -95,7 +95,7 @@ if __name__ == "__main__":
         
         # ALL THE TRADING LOGIC HERE BASED ON DIRECTION AND IF THERE ARE ANY OPEN TRADES OF THAT TICKER 
         if difference >= 5:
-                took_trade = True
+            took_trade = True
         else:
             took_trade = False
         
