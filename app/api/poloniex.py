@@ -7,20 +7,16 @@ import urllib.parse
 
 import pandas as pd
 import requests
+from loguru import logger
 
+from app.api.exceptions import PoloniexError
 from app.config import PoloniexConfig
-
-
-class PoloniexError(Exception):
-    """Base Exception for handling Poloniex API Errors"""
-
-    pass
 
 
 class Poloniex:
     def __init__(self, config: PoloniexConfig):
 
-        self.__config = {"API_KEY": config.api_key, "Secret": config.api_secret}
+        self.__config = {"api_key": config.api_key, "api_secret": config.api_secret}
         self.__private_url = "https://poloniex.com/tradingApi"
         self.__public_url = "https://poloniex.com/public"
         self.__public_commands = config.public_commands
@@ -33,7 +29,7 @@ class Poloniex:
         skip_loop = False
 
         if interval not in self.__intervals:
-            intvls = "\n".join(self.__intervals)
+            intvls = "\n".join([str(i) for i in self.__intervals])
             raise PoloniexError(
                 f"Invalid Interval.\nPlease use one of the following:\n{intvls}"
             )
@@ -56,7 +52,7 @@ class Poloniex:
                 start = dt.datetime(2018, 1, 1)
             df = self.create_df(ticker, interval, start)
         else:
-            Start = dt.datetime.now().timestamp()
+            _start = dt.datetime.now().timestamp()
             if interval == 300:
                 weeks = 14
             elif interval == 900:
@@ -85,8 +81,8 @@ class Poloniex:
                             .drop_duplicates(subset="period", keep="first")
                             .set_index("period")
                         )
-                        run_time = dt.datetime.now().timestamp() - Start
-                        print(f"Took {run_time} seconds to load full DF.")
+                        run_time = dt.datetime.now().timestamp() - _start
+                        logger.info(f"Took {run_time} seconds to load full DF.")
                         break
             else:
                 start = dt.datetime(2018, 1, 1)
@@ -95,7 +91,7 @@ class Poloniex:
 
     def create_df(self, ticker, interval, start, end=None):
         if interval not in self.__intervals:
-            intvls = "\n".join(self.__intervals)
+            intvls = "\n".join([str(i) for i in self.__intervals])
             raise PoloniexError(
                 f"Invalid Interval.\nPlease use one of the following:\n{intvls}"
             )
@@ -179,6 +175,10 @@ class Poloniex:
             if "last" in data:
                 return float(data["last"])
 
+    def get_balance(self, currency) -> float:
+        val = float(self.api_query("returnBalances")[currency])
+        return val
+
     def get_1_percent_of_bal(self, currency):
         if currency not in self.__currencies:
             currencies = "\n".join(self.__currencies)
@@ -187,24 +187,32 @@ class Poloniex:
             )
 
         val = float(self.api_query("returnBalances")[currency])
+
         if val == 0:
             raise PoloniexError(
                 "Your Balance is 0. Please deposit and restart the bot."
             )
+
         return val / 100
 
     def get_1_percent_trade_size(self, ticker, currency):
+
         if ticker not in self.__tickers:
             tickers = "\n".join(self.__tickers)
             raise PoloniexError(
                 f"Invalid Ticker.\nPlease use one of the following:\n{tickers}"
             )
+
         if currency not in self.__currencies:
             currencies = "\n".join(self.__currencies)
             raise PoloniexError(
                 f"Invalid Currency.\nPlease use one of the following:\n{currencies}"
             )
-        one_percent = self.get_1_percent_of_bal(currency)
+
+        one_percent = self.get_1_percent_of_bal(
+            currency,
+        )
+
         current_price = self.get_current_price(ticker)
         return one_percent / current_price
 
@@ -231,18 +239,20 @@ class Poloniex:
         # Trading / Private API Requests
         if command in self.__private_commands:
             if self.__config is None:
-                raise PoloniexError("Specify API-Key and Secret first.")
+                raise PoloniexError("Specify api_key and api_secret first.")
 
             # Sign POST data for authentication
             params_encoded = urllib.parse.urlencode(params).encode("ascii")
             sign = hmac.new(
-                self.__config["Secret"].encode("ascii"), params_encoded, hashlib.sha512
+                self.__config["api_secret"].encode("ascii"),
+                params_encoded,
+                hashlib.sha512,
             ).hexdigest()
-            headers = {"Key": self.__config["API_KEY"], "Sign": sign}
+            headers = {"Key": self.__config["api_key"], "Sign": sign}
             while True:
                 r = requests.post(self.__private_url, data=params, headers=headers)
                 if r.status_code != 200:
-                    print("Hit Rate limit. Sleeping for 3 Second")
+                    logger.warning(f"Hit Rate limit. Sleeping for 3 Second. {r.text}")
                     time.sleep(3)
                     params["nonce"] = int(dt.datetime.now().timestamp())
                 else:

@@ -3,13 +3,14 @@ import json
 import os
 import time
 from typing import Optional
-
+from loguru import logger
+import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
 
+from app.api.exceptions import PoloniexError
 from app.api.poloniex import Poloniex
 from app.config import Config
 from app.utils import load_config
-
 
 if __name__ == "__main__":
 
@@ -48,9 +49,9 @@ if __name__ == "__main__":
         if not next_interval:
             time_since_run = dt.datetime.now().timestamp() - LastRun
             if LastRun == 0:
-                print("Bot never run before, running for first time...")
+                logger.info("Bot never run before, running for first time...")
             elif time_since_run >= interval:
-                print(
+                logger.info(
                     f"It has been {time_since_run} seconds since last run. running"
                     " now.."
                 )
@@ -67,7 +68,7 @@ if __name__ == "__main__":
                 next_interval_string = dt.datetime.strftime(
                     next_interval, "%Y-%m-%d %H:%M:%S"
                 )
-                print(
+                logger.info(
                     "We have the next interval, sleeping until then. See you in"
                     f" {next_interval_sleep} seconds at {next_interval_string}"
                 )
@@ -87,7 +88,7 @@ if __name__ == "__main__":
                     )
                     order_number = int(open_positions[t][p]["orderNumber"])
                     if trade_date < two_days_ago:
-                        print(
+                        logger.success(
                             f"Killing {open_positions[t][p]['type']} order with order"
                             f" number {order_number}\nPosition was opened on:"
                             f" {open_positions[t][p]['date']}"
@@ -101,7 +102,7 @@ if __name__ == "__main__":
 
         # CREATE DF AND DUMP TO JSON
         if not os.path.exists(path=price_log_json):
-            print("Loading full DataFrame.")
+            logger.info("Loading full DataFrame.")
             df = polo.auto_create_df(ticker, interval, full_df=True)
             df.drop(
                 ["high", "low", "open", "volume", "quoteVolume", "weightedAverage"],
@@ -119,7 +120,7 @@ if __name__ == "__main__":
             )
             next_interval = current_interval + dt.timedelta(seconds=interval)
         else:
-            print("Loading existing DataFrame and updating with new records.")
+            logger.info("Loading existing DataFrame and updating with new records.")
             df = polo.load_df_from_json(file_path=price_log_json)
 
         while True:
@@ -142,13 +143,13 @@ if __name__ == "__main__":
                 print_current_interval = dt.datetime.strftime(
                     current_interval, "%Y-%m-%d %H:%M:%S"
                 )
-                print(
+                logger.warning(
                     f"Current interval received was {print_current_interval}, which"
                     " should be wrong, sleeping for 5 seconds and reloading DataFrame"
                 )
                 time.sleep(5)
 
-        df = df.append(new_df)
+        df = pd.concat(objs=[df, new_df])
         df = (
             df.reset_index()
             .drop_duplicates(subset="period", keep="first")
@@ -205,7 +206,7 @@ if __name__ == "__main__":
                     trade_log[date]["correct_prediction"] = False
 
         if update_count > 0:
-            print(f"Updated JSON Trade Log with {update_count} new records.")
+            logger.success(f"Updated JSON Trade Log with {update_count} new records.")
 
         # GRAB ONLY LAST THIRD OF THE DATAFRAME
         third = int(len(df) * 0.66)
@@ -227,7 +228,7 @@ if __name__ == "__main__":
             difference = previous_close - result
 
         # PRINT THE RESULTS FROM THE PREDICTION
-        print(
+        logger.success(
             f"Predictions have predicted the price being {direction} than the previous"
             f" close of: {previous_close} at the next interval of:"
             f" {next_interval}.\nPrice predicted: {result}, price difference is"
@@ -238,38 +239,66 @@ if __name__ == "__main__":
         # ONLY TRADES IF % CHANCE IS > 75% AND IF AUTOTRADE IS SET TO TRUE
         if auto_trade:
             if difference >= 5:
+
+                # если нужно продавать - то продаем на 1 процент
+                # от общего кол-ва второй позиции в тикере
+                # если нужно покупать, то покупаем на 1 процент от
+                # первой позиции в тикере
                 if direction == "Lower":
                     trade_type = "sell"
+                    currency = ticker.split("_")[1]
                 else:
                     trade_type = "buy"
+                    currency = ticker.split("_")[0]
+
                 if ticker in open_positions:
-                    print(
+                    logger.info(
                         "Not initiating trade, position already open for ticker"
                         f" {ticker}."
                     )
                     took_trade = False
                 else:
-                    trade_amount = polo.get_1_percent_trade_size(ticker, "BTC")
-                    rate = polo.get_current_price(ticker)
-                    print(
-                        f"Placing Trade for ticker: {ticker}, {trade_type}ing an amount"
-                        f" of {trade_amount} at a rate of {rate} per 1."
-                    )
-                    trade_params = {
-                        "currencyPair": ticker,
-                        "rate": rate,
-                        "amount": trade_amount,
-                    }
-                    polo.api_query(trade_type, trade_params)
-                    took_trade = True
+
+                    #  GET BALANCE
+                    balance = polo.get_balance(currency)
+                    # IF TRADE TYPE IS BUY AND BALANCE == 0
+                    if balance == 0:
+
+                        if trade_type == "buy":
+                            raise PoloniexError(
+                                "Your Balance is 0. Please deposit and restart the bot."
+                            )
+                        else:
+                            took_trade = False
+                            logger.info("Nothing selling wait next time.")
+
+                    else:
+
+                        trade_amount = polo.get_1_percent_trade_size(ticker, currency)
+
+                        rate = polo.get_current_price(ticker)
+
+                        logger.info(
+                            f"Placing Trade for ticker: {ticker}, {trade_type}ing an"
+                            f" amount of {trade_amount} at a rate of {rate} per 1."
+                        )
+
+                        trade_params = {
+                            "currencyPair": ticker,
+                            "rate": rate,
+                            "amount": trade_amount,
+                        }
+
+                        polo.api_query(trade_type, trade_params)
+                        took_trade = True
             else:
                 took_trade = False
-                print(
+                logger.info(
                     f"Not initiating trade, predicted price difference was less than 5."
                 )
         else:
             took_trade = False
-            print(
+            logger.info(
                 "Not Trading, AutoTrade is set to False, "
                 "to change this, please set AutoTrade to true in APISettings.json"
             )
