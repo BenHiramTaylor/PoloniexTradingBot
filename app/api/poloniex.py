@@ -145,21 +145,21 @@ class Poloniex:
         df.index = df.index.astype(str)
         return df
 
-    def get_current_ticker_data(self, Ticker="All"):
-        if Ticker not in self.__tickers:
-            if Ticker != "All":
+    def get_current_ticker_data(self, ticker="All"):
+        if ticker not in self.__tickers:
+            if ticker != "All":
                 tickers = "\n".join(self.__tickers)
                 raise PoloniexError(
                     "Invalid Ticker.\nPlease use one of the"
                     f" following:\n{tickers}\nDefault is 'All'"
                 )
 
-        Alltickers = self.api_query("returnTicker")
+        alltickers = self.api_query("returnTicker")
 
-        if Ticker == "All":
-            return Alltickers
+        if ticker == "All":
+            return alltickers
         else:
-            return Alltickers[Ticker]
+            return alltickers[ticker]
 
     def get_current_price(self, ticker: str = "All"):
         data = self.get_current_ticker_data(ticker)
