@@ -1,7 +1,6 @@
 import datetime as dt
 import hashlib
 import hmac
-import os
 import time
 import urllib.parse
 
@@ -15,7 +14,6 @@ from app.config import PoloniexConfig
 
 class Poloniex:
     def __init__(self, config: PoloniexConfig):
-
         self.__config = {"api_key": config.api_key, "api_secret": config.api_secret}
         self.__private_url = "https://poloniex.com/tradingApi"
         self.__public_url = "https://poloniex.com/public"
@@ -133,16 +131,6 @@ class Poloniex:
 
         df = pd.DataFrame(data)
         df.set_index("period", inplace=True)
-        return df
-
-    def load_df_from_json(self, file_path):
-        if not os.path.exists(file_path):
-            raise PoloniexError(
-                "File path does not exist, should not be trying to load DF."
-            )
-        df = pd.read_json(file_path, orient="index", convert_dates=False)
-        df.index.name = "period"
-        df.index = df.index.astype(str)
         return df
 
     def get_current_ticker_data(self, ticker="All"):
